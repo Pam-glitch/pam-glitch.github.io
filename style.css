@@ -5,16 +5,17 @@
 --------------------------------------------------- */
 
 :root {
-  --bg: #15131c;         /* near-black ink, warm-purple undertone */
-  --ink: #f4f1e8;        /* warm off-white text */
-  --rule: #f4f1e8;
-  --blue: #5bcefa;       /* staff line 1 & 5 */
-  --pink: #f5a9b8;       /* staff line 2 & 4 */
-  --white: #ffffff;      /* staff line 3 */
-  --link: #5bcefa;
-  --link-visited: #c9a6e0;
-  --link-hover: #f5a9b8;
-  --width: 700px;
+  --bg: #f2ece0;         /* warm cream base */
+  --ink: #16151a;        /* near-black */
+  --red: #e8432f;
+  --yellow: #f2b134;
+  --teal: #2a9d8f;
+  --blue: #5bcefa;
+  --pink: #f28fa8;
+  --link: var(--red);
+  --link-visited: var(--teal);
+  --link-hover: var(--ink);
+  --width: 720px;
 }
 
 * { box-sizing: border-box; }
@@ -27,18 +28,19 @@ html, body {
 }
 
 body {
-  font-family: Georgia, "Times New Roman", Times, serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 18px;
   line-height: 1.6;
   padding: 32px 16px 64px;
 }
 
 h1, h2 {
-  font-family: "Arial Black", Arial, "Helvetica Neue", Helvetica, sans-serif;
+  font-family: "Century Gothic", Futura, "Trebuchet MS", Arial, sans-serif;
   font-weight: 900;
+  text-transform: uppercase;
 }
 
-.nav, .meta, .staff-label, th {
+.nav, .meta, th {
   font-family: "Courier New", Courier, monospace;
 }
 
@@ -52,41 +54,56 @@ header.site-header {
 }
 
 h1 {
-  font-size: 30px;
-  letter-spacing: 0.5px;
-  margin: 0 0 6px;
+  font-size: 34px;
+  letter-spacing: 1px;
+  margin: 0 0 10px;
+  border-bottom: 8px solid var(--red);
+  display: inline-block;
+  padding-bottom: 6px;
 }
 
 .tagline {
-  margin: 0 0 18px;
-  font-style: italic;
+  margin: 14px 0 20px;
+  font-style: normal;
+  font-weight: bold;
   color: var(--ink);
-  opacity: 0.85;
 }
 
-/* nav: plain text links, pipe-separated, bold color underline */
+/* nav: chunky color-block chips, thick black borders */
 .nav {
-  font-size: 15px;
+  font-size: 14px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  padding-bottom: 14px;
-  border-bottom: 3px solid var(--blue);
+  font-weight: bold;
+  padding-bottom: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .nav a {
-  margin-right: 4px;
-  font-weight: bold;
+  display: inline-block;
+  padding: 6px 14px;
+  border: 3px solid var(--ink);
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--yellow);
 }
 
-.nav .sep {
-  margin: 0 8px;
-  color: var(--ink);
-  opacity: 0.5;
+.nav a:nth-child(2) { background: var(--blue); }
+.nav a:nth-child(3) { background: var(--pink); }
+.nav a:nth-child(4) { background: var(--teal); }
+
+.nav a:hover {
+  background: var(--ink);
+  color: var(--bg);
 }
+
+.nav .sep { display: none; }
 
 a {
   color: var(--link);
-  text-decoration-thickness: 1.5px;
+  font-weight: bold;
 }
 
 a:visited {
@@ -98,20 +115,23 @@ a:hover, a:focus {
 }
 
 a:focus-visible {
-  outline: 2px solid var(--link-hover);
+  outline: 3px solid var(--ink);
   outline-offset: 2px;
 }
 
-/* --- signature element: a 5-line music staff, recolored --- */
+/* --- signature element: thick striped bars (staff, reimagined chunkier) --- */
 .staff {
-  height: 33px;
+  height: 32px;
   margin: 32px 0;
+  border-top: 3px solid var(--ink);
+  border-bottom: 3px solid var(--ink);
   background:
-    linear-gradient(var(--blue), var(--blue))  0 0px   / 100% 1px no-repeat,
-    linear-gradient(var(--pink), var(--pink))  0 8px   / 100% 1px no-repeat,
-    linear-gradient(var(--white), var(--white)) 0 16px / 100% 1px no-repeat,
-    linear-gradient(var(--pink), var(--pink))  0 24px  / 100% 1px no-repeat,
-    linear-gradient(var(--blue), var(--blue))  0 32px  / 100% 1px no-repeat;
+    linear-gradient(var(--blue), var(--blue))  0 0    / 100% 5px no-repeat,
+    linear-gradient(var(--pink), var(--pink))  0 8px  / 100% 5px no-repeat,
+    linear-gradient(#ffffff, #ffffff)          0 16px / 100% 5px no-repeat,
+    linear-gradient(var(--pink), var(--pink))  0 20px / 100% 5px no-repeat,
+    linear-gradient(var(--blue), var(--blue))  0 24px / 100% 5px no-repeat;
+  background-color: var(--bg);
 }
 
 main {
@@ -119,10 +139,22 @@ main {
 }
 
 h2 {
-  font-size: 19px;
+  font-size: 20px;
   letter-spacing: 0.5px;
-  text-transform: uppercase;
-  margin: 0 0 12px;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+h2::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: var(--red);
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 p {
@@ -135,28 +167,29 @@ table {
   border-collapse: collapse;
   font-size: 16px;
   margin-bottom: 8px;
+  border: 3px solid var(--ink);
 }
 
 th, td {
   text-align: left;
-  padding: 8px 10px 8px 0;
-  border-bottom: 1px solid var(--rule);
+  padding: 10px 12px;
+  border: 2px solid var(--ink);
   vertical-align: top;
 }
 
 th {
-  font-weight: normal;
+  font-weight: bold;
   font-size: 13px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  border-bottom: 2px solid var(--pink);
-  color: var(--pink);
+  background: var(--yellow);
+  color: var(--ink);
 }
 
 .meta {
   font-size: 13px;
   color: var(--ink);
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
 ul.recent {
@@ -166,12 +199,10 @@ ul.recent {
 }
 
 ul.recent li {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--rule);
-}
-
-ul.recent li:first-child {
-  border-top: 1px solid var(--rule);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border: 3px solid var(--ink);
+  background: #ffffff;
 }
 
 footer {
@@ -179,16 +210,12 @@ footer {
   font-size: 13px;
 }
 
-footer .staff {
-  margin: 32px 0 20px;
-}
-
 footer p {
   margin: 0 0 6px;
-  opacity: 0.85;
 }
 
 @media (max-width: 480px) {
   body { font-size: 16px; padding: 20px 14px 48px; }
-  h1 { font-size: 24px; }
+  h1 { font-size: 26px; }
+  .nav { gap: 6px; }
 }
