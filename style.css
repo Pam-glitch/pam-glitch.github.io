@@ -1,21 +1,25 @@
 /* ---------------------------------------------------
    style.css
    No frameworks, no web fonts, no external requests.
-   Edit the values under "tokens" to change the look.
+
+   COLOR: everything below is pure black/white right now.
+   --accent is wired up but unused (set to black) — the
+   moment you pick a color, drop the hex code in there and
+   it'll apply to links, the table rule, and the divider dot.
 --------------------------------------------------- */
 
 :root {
-  --bg: #f2ece0;         /* warm cream base */
-  --ink: #16151a;        /* near-black */
-  --red: #e8432f;
-  --yellow: #f2b134;
-  --teal: #2a9d8f;
-  --blue: #5bcefa;
-  --pink: #f28fa8;
-  --link: var(--red);
-  --link-visited: var(--teal);
-  --link-hover: var(--ink);
-  --width: 720px;
+  --bg: #ffffff;
+  --ink: #000000;
+  --gray: #4a4a4a;
+  --red: #ff1131;
+  --green: #00e676;
+  --blue: #1f51ff;
+  --accent: var(--red);
+  --link: var(--blue);
+  --link-visited: var(--green);
+  --link-hover: var(--red);
+  --width: 680px;
 }
 
 * { box-sizing: border-box; }
@@ -24,20 +28,19 @@ html, body {
   margin: 0;
   padding: 0;
   background: var(--bg);
-  color: var(--ink);
+  color: var(--gray);
 }
 
 body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1.6;
-  padding: 32px 16px 64px;
+  padding: 48px 20px 72px;
 }
 
 h1, h2 {
-  font-family: "Century Gothic", Futura, "Trebuchet MS", Arial, sans-serif;
-  font-weight: 900;
-  text-transform: uppercase;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700;
 }
 
 .nav, .meta, th {
@@ -50,60 +53,52 @@ h1, h2 {
 }
 
 header.site-header {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 h1 {
-  font-size: 34px;
-  letter-spacing: 1px;
-  margin: 0 0 10px;
-  border-bottom: 8px solid var(--red);
-  display: inline-block;
-  padding-bottom: 6px;
+  font-size: 26px;
+  letter-spacing: 0.2px;
+  margin: 0 0 4px;
+  color: var(--ink);
 }
 
 .tagline {
-  margin: 14px 0 20px;
-  font-style: normal;
-  font-weight: bold;
+  margin: 0 0 24px;
+  font-size: 15px;
+  font-family: "Courier New", Courier, monospace;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   color: var(--ink);
+  opacity: 0.7;
 }
 
-/* nav: chunky color-block chips, thick black borders */
+/* nav: plain text, pipe-separated, no color, no boxes */
 .nav {
   font-size: 14px;
   letter-spacing: 0.5px;
-  text-transform: uppercase;
-  font-weight: bold;
-  padding-bottom: 4px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ink);
 }
 
 .nav a {
-  display: inline-block;
-  padding: 6px 14px;
-  border: 3px solid var(--ink);
-  text-decoration: none;
+  text-decoration: underline;
   color: var(--ink);
-  background: var(--yellow);
 }
-
-.nav a:nth-child(2) { background: var(--blue); }
-.nav a:nth-child(3) { background: var(--pink); }
-.nav a:nth-child(4) { background: var(--teal); }
 
 .nav a:hover {
-  background: var(--ink);
-  color: var(--bg);
+  text-decoration: none;
 }
 
-.nav .sep { display: none; }
+.nav .sep {
+  margin: 0 10px;
+  color: var(--ink);
+  opacity: 0.4;
+}
 
 a {
   color: var(--link);
-  font-weight: bold;
+  text-decoration: underline;
 }
 
 a:visited {
@@ -112,47 +107,43 @@ a:visited {
 
 a:hover, a:focus {
   color: var(--link-hover);
+  text-decoration: none;
 }
 
 a:focus-visible {
-  outline: 3px solid var(--ink);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
-/* --- signature element: Munari-esque geometric shapes (circle / square / triangle) --- */
+/* --- signature element: a single thin rule, one small dot --- */
 .staff {
-  height: 32px;
-  margin: 32px 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='32' viewBox='0 0 90 32'%3E%3Ccircle cx='15' cy='16' r='11' fill='%23e8432f' stroke='%2316151a' stroke-width='2'/%3E%3Crect x='34' y='5' width='22' height='22' fill='%23f2b134' stroke='%2316151a' stroke-width='2'/%3E%3Cpolygon points='68,4 79,27 57,27' fill='%235bcefa' stroke='%2316151a' stroke-width='2'/%3E%3C/svg%3E");
-  background-repeat: repeat-x;
-  background-position: left center;
-  background-size: 90px 32px;
+  height: 1px;
+  background: var(--ink);
+  margin: 40px 0;
+  position: relative;
 }
-/* Note: colors above are hardcoded hex (not the CSS variables) because this
-   shape is drawn as an embedded image, not real HTML — if you change the
-   --red/--yellow/--blue tokens above, update the matching %23 hex codes here too. */
+
+.staff::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translate(-2px, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
 
 main {
-  margin-top: 24px;
+  margin-top: 8px;
 }
 
 h2 {
-  font-size: 20px;
-  letter-spacing: 0.5px;
-  margin: 0 0 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-h2::before {
-  content: "";
-  width: 16px;
-  height: 16px;
-  background: var(--red);
-  border-radius: 50%;
-  display: inline-block;
-  flex-shrink: 0;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0 0 18px;
 }
 
 p {
@@ -163,31 +154,30 @@ p {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 16px;
+  font-size: 15px;
   margin-bottom: 8px;
-  border: 3px solid var(--ink);
+  border-top: 2px solid var(--blue);
 }
 
 th, td {
   text-align: left;
-  padding: 10px 12px;
-  border: 2px solid var(--ink);
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--ink);
   vertical-align: top;
 }
 
 th {
-  font-weight: bold;
-  font-size: 13px;
+  font-weight: normal;
+  font-size: 12px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  background: var(--yellow);
-  color: var(--ink);
+  opacity: 0.7;
 }
 
 .meta {
   font-size: 13px;
   color: var(--ink);
-  opacity: 0.8;
+  opacity: 0.65;
 }
 
 ul.recent {
@@ -197,23 +187,25 @@ ul.recent {
 }
 
 ul.recent li {
-  padding: 12px 14px;
-  margin-bottom: 8px;
-  border: 3px solid var(--ink);
-  background: #ffffff;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+ul.recent li:first-child {
+  border-top: 2px solid var(--blue);
 }
 
 footer {
-  margin-top: 40px;
+  margin-top: 48px;
   font-size: 13px;
 }
 
 footer p {
   margin: 0 0 6px;
+  opacity: 0.7;
 }
 
 @media (max-width: 480px) {
-  body { font-size: 16px; padding: 20px 14px 48px; }
-  h1 { font-size: 26px; }
-  .nav { gap: 6px; }
+  body { font-size: 16px; padding: 32px 16px 48px; }
+  h1 { font-size: 22px; }
 }
