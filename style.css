@@ -13,11 +13,10 @@
   --ink: #000000;
   --gray: #4a4a4a;
   --red: #ff1131;
-  --green: #00e676;
   --blue: #1f51ff;
   --accent: var(--red);
   --link: var(--blue);
-  --link-visited: var(--green);
+  --link-visited: var(--blue);
   --link-hover: var(--red);
   --width: 680px;
 }
@@ -58,9 +57,10 @@ header.site-header {
 
 h1 {
   font-size: 26px;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.5px;
   margin: 0 0 4px;
   color: var(--ink);
+  text-transform: uppercase;
 }
 
 .tagline {
