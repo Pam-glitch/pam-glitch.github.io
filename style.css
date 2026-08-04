@@ -86,6 +86,10 @@ h1 {
   color: var(--ink);
 }
 
+.nav a:visited {
+  color: var(--ink);
+}
+
 .nav a:hover {
   text-decoration: none;
 }
