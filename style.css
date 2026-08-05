@@ -285,8 +285,9 @@ footer p {
   flex: 1;
   width: 100%;
   min-height: 0;
+  min-width: 0;
   display: block;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 /* Right column: text, flanking the graph on the other side */
