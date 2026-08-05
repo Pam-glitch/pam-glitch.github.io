@@ -261,17 +261,13 @@ footer p {
 .graph-wrap {
   max-width: 1400px;
   margin: 0 auto;
-  display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  position: relative;
 }
 
 .map-graph svg {
-  flex: 1;
-  min-width: 0;
-  border: 1px solid rgba(0, 0, 0, 0.15);
   width: 100%;
   height: auto;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   touch-action: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -279,13 +275,13 @@ footer p {
 }
 
 .info-panel {
-  width: 320px;
-  flex-shrink: 0;
+  width: 300px;
   border: 1px solid var(--ink);
   padding: 18px;
   font-size: 15px;
   position: relative;
   display: none;
+  margin-top: 16px;
 }
 
 .info-panel.open {
@@ -330,16 +326,19 @@ footer p {
   padding: 0;
 }
 
-@media (max-width: 700px) {
-  .graph-wrap {
-    flex-direction: column;
-  }
-  .info-panel {
-    width: 100%;
-    display: block;
-  }
-  .info-panel:not(.open) .info-panel-close {
-    display: none;
+/* On wide screens there's real empty margin outside the 1400px graph —
+   let the panel live there instead of squeezing the graph narrower. */
+@media (min-width: 1100px) {
+  .info-panel.open {
+    position: fixed;
+    top: 200px;
+    right: 32px;
+    width: 300px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: var(--bg);
+    z-index: 10;
+    margin-top: 0;
   }
 }
 
