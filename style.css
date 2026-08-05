@@ -345,7 +345,8 @@ footer p {
   .info-panel.open {
     position: fixed;
     top: 200px;
-    right: 32px;
+    left: calc(50% + (var(--width) / 2) + 40px);
+    right: auto;
     width: 420px;
     max-height: 70vh;
     overflow-y: auto;
