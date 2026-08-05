@@ -250,18 +250,32 @@ footer p {
 }
 
 .map-graph {
-  display: block;
   margin: 24px 0;
+  /* full-bleed: escape the 680px .wrap so there's room for side
+     panels on wide screens, while staying centered on any width */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  display: flex;
+  justify-content: center;
 }
 
 .graph-wrap {
-  max-width: 680px;
-  margin: 0 auto;
-  position: relative;
+  width: 100%;
+  max-width: 1300px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
 }
 
 .map-graph svg {
-  width: 100%;
+  order: 2;
+  flex: 10 1 480px;
+  max-width: 680px;
+  min-width: 280px;
   height: auto;
   border: 1px solid rgba(0, 0, 0, 0.15);
   touch-action: none;
@@ -270,7 +284,8 @@ footer p {
   user-select: none;
 }
 
-/* Left column: images, flanking the graph, matching its height exactly */
+/* Images: shown left of the graph when there's room, otherwise
+   wraps above it. Same fixed-order pattern for every screen width. */
 .panel-images-col {
   display: none;
 }
@@ -279,26 +294,30 @@ footer p {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  order: 1;
+  flex: 1 1 140px;
+  max-width: 180px;
 }
 
 .panel-images-col img {
-  flex: 1;
   width: 100%;
-  min-height: 0;
-  min-width: 0;
   display: block;
   object-fit: contain;
 }
 
-/* Right column: text, flanking the graph on the other side */
+/* Text: shown right of the graph when there's room, otherwise
+   wraps below it. */
 .panel-text-col {
   display: none;
   font-size: 15px;
-  position: relative;
 }
 
 .panel-text-col.open {
   display: block;
+  order: 3;
+  flex: 3 1 280px;
+  max-width: 380px;
+  position: relative;
 }
 
 .panel-text-col h3 {
@@ -323,52 +342,6 @@ footer p {
   color: var(--ink);
   line-height: 1;
   padding: 0;
-}
-
-/* On wide screens, anchor both columns to the graph's own box edges,
-   at its exact height — they scroll and stay locked to the graph.
-   Needs ~1500px of viewport: 680px centered wrap + room on both
-   sides for the 380px text panel + its 24px gap. Below that, the
-   side panels would get clipped off-screen, so we stack instead. */
-@media (min-width: 1500px) {
-  .panel-images-col.open {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    right: 100%;
-    margin-right: 24px;
-    width: 180px;
-  }
-  .panel-text-col.open {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    overflow-y: auto;
-    left: 100%;
-    margin-left: 24px;
-    width: 380px;
-  }
-}
-
-/* Below that width there's no room in the margins — stack normally instead */
-@media (max-width: 1499px) {
-  .graph-wrap {
-    display: flex;
-    flex-direction: column;
-  }
-  .panel-images-col.open {
-    order: 1;
-    flex-direction: row;
-    height: 140px;
-    margin-bottom: 12px;
-  }
-  .map-graph svg {
-    order: 2;
-  }
-  .panel-text-col.open {
-    order: 3;
-    margin-top: 12px;
-  }
 }
 
 .map-list {
