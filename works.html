@@ -5,7 +5,7 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 <div class="wrap">
@@ -225,6 +225,28 @@ pieces.forEach(function(p){
     p.x = sumX / p.links.length;
     p.y = sumY / p.links.length;
   }
+});
+
+// Pieces connected to exactly one family sit at a fixed distance from
+// it, spaced evenly by angle around that family — same distance for
+// every piece, no manual/random placement.
+var SINGLE_LINK_RADIUS = 95;
+var singleLinkGroups = {};
+pieces.forEach(function(p){
+  if (p.links.length === 1) {
+    var fid = p.links[0];
+    (singleLinkGroups[fid] = singleLinkGroups[fid] || []).push(p);
+  }
+});
+Object.keys(singleLinkGroups).forEach(function(fid){
+  var group = singleLinkGroups[fid];
+  var center = nodeById[fid];
+  var angleStep = (2 * Math.PI) / group.length;
+  group.forEach(function(p, i){
+    var angle = -Math.PI / 2 + i * angleStep;
+    p.x = center.x + SINGLE_LINK_RADIUS * Math.cos(angle);
+    p.y = center.y + SINGLE_LINK_RADIUS * Math.sin(angle);
+  });
 });
 
 pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r:20}, p); });
