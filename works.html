@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer.">
+<meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="style.css">
@@ -14,133 +14,251 @@
     <h1>Adam A.Ø. Pambianchi</h1>
     <p class="tagline">Composer</p>
     <nav class="nav">
-      <a href="index.html">home</a><span class="sep">|</span><a href="works.html">works</a><span class="sep">|</span><a href="map.html">map</a><span class="sep">|</span><a href="next.html">next</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="contact.html">contact</a>
+      <a href="index.html">home</a><span class="sep">|</span><a href="works.html">works</a><span class="sep">|</span><a href="next.html">next</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="contact.html">contact</a>
     </nav>
   </header>
 
   <main>
-    <h2>catalog of works</h2>
-    <p>Selected premieres, newest first. Scores and recordings sent on request — see <a href="contact.html">contact</a>.</p>
+    <h2>works</h2>
+    <p>Drag the nodes around, or switch to a simple list.</p>
 
-    <table>
-      <thead>
-        <tr>
-          <th>title</th>
-          <th>year</th>
-          <th>for</th>
-          <th>where</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Solo piece for Saxophone</td>
-          <td>2026</td>
-          <td>saxophone (Gudrun Faleide Fristad)</td>
-          <td>Premiere 7 Aug; touring La Plata, Ushuaia, Cajamarca from 24 Aug</td>
-        </tr>
-        <tr>
-          <td>By the Grave of the Unknown Queer</td>
-          <td>2026</td>
-          <td>orchestra</td>
-          <td>Trondheim Symphony Orchestra — workshops Jan &amp; May</td>
-        </tr>
-        <tr>
-          <td>We're Not Really Strangers</td>
-          <td>2026</td>
-          <td>cello, two pianos</td>
-          <td>Norwegian Academy of Music, 16 March</td>
-        </tr>
-        <tr>
-          <td>Erbe Selvatiche</td>
-          <td>2026</td>
-          <td>bass clarinet (Madara Elena Mezale)</td>
-          <td>Norwegian Academy of Music, 24 March</td>
-        </tr>
-        <tr>
-          <td>Il Mio, Il Tuo Corpo</td>
-          <td>2025</td>
-          <td>interdisciplinary</td>
-          <td>Aparte Festival, Vestfold Kunstsenter</td>
-        </tr>
-        <tr>
-          <td>1st Draft: First Lady</td>
-          <td>2025</td>
-          <td>Duo Amoeba</td>
-          <td>Blitz, Oslo</td>
-        </tr>
-        <tr>
-          <td>Richiamo</td>
-          <td>2025</td>
-          <td>trombone, tam-tam, transducer (Guro Kitterød)</td>
-          <td>Sonisk Hage Festival, Galleri Sagene Kunstsmie</td>
-        </tr>
-        <tr>
-          <td>Corpo</td>
-          <td>2025</td>
-          <td>electroacoustic, ambisonics (w/ saxophonist Gregory Karanekha)</td>
-          <td>Laidi Palace, Latvia</td>
-        </tr>
-        <tr>
-          <td>Opera</td>
-          <td>2025</td>
-          <td>percussion duo (Lillekontoret)</td>
-          <td>Sonisk Hage Festival, Galleri Sagene Kunstsmie</td>
-        </tr>
-        <tr>
-          <td>Tachysensia</td>
-          <td>2025</td>
-          <td>speakers &amp; phones</td>
-          <td>Notam, Sonisk Hage Festival</td>
-        </tr>
-        <tr>
-          <td>Habitat</td>
-          <td>2025</td>
-          <td>interdisciplinary performance</td>
-          <td>Norwegian Academy of Music</td>
-        </tr>
-        <tr>
-          <td>Motore</td>
-          <td>2024</td>
-          <td>graduation performance, Clothing &amp; Costume</td>
-          <td>Oslo National Academy of the Arts (KHiO)</td>
-        </tr>
-        <tr>
-          <td>In Acqua</td>
-          <td>2024</td>
-          <td>choir</td>
-          <td>JVLMA Jauktais Koris, Riga</td>
-        </tr>
-        <tr>
-          <td>Short Stories</td>
-          <td>2024</td>
-          <td>interdisciplinary, w/ choreographer Anna Einemo Frøysland</td>
-          <td>Technical Museum, Oslo</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="view-toggle">
+      <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
+    </div>
 
-    <h2>collective &amp; collaborative projects</h2>
-    <p>Works created as flat, co-authored collaborations rather than pieces written for a performer.</p>
-    <ul class="recent">
-      <li>
-        <strong>FiTTyKATTA! Liberation is Erotic</strong> — 2026<br>
-        <span class="meta">Curator &amp; co-artist, with Vincenzo Madaghiele and Maria Gabriela Rubio, as part of the collective <a href="https://perrealladiavola.com" target="_blank" rel="noopener">Perre alla Diavola</a> — Boksen Noise, Oslo</span>
-      </li>
-    </ul>
+    <div class="map-graph" id="map-graph-view">
+      <svg id="graph" viewBox="0 0 680 620" role="img" aria-label="Diagram of works grouped by instrument family, draggable">
+        <title>Works grouped by instrument family</title>
+        <g id="edges"></g>
+        <g id="nodes"></g>
+      </svg>
+    </div>
 
-    <p class="meta">
-      Also participating in the Activism Bootcamp (Latvian Academy of Culture, Riga, June 2026),
-      artistic residency in Sauen (w/ UdK Berlin, Basel, Graz, Oslo, Dresden, May 2026),
-      Erasmus BIP on Electroacoustic Performance Practices (Sibelius Academy, Helsinki, May 2026),
-      a second workshop with Trondheim Symphony Orchestra (May 2026), and a workshop with
-      Jack Quartet at Only Connect Oslo's Festival Academy (April 2026).
-    </p>
+    <div class="map-list" id="map-list-view">
+      <details open>
+        <summary style="border-left: 4px solid #00c2c2; padding-left: 10px;">Winds</summary>
+        <ul class="recent">
+          <li>Wind Quintet</li>
+          <li>Solo piece for Saxophone</li>
+          <li>Erbe Selvatiche</li>
+          <li>Corpo</li>
+          <li>Album (2026)</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #ff9500; padding-left: 10px;">Brass</summary>
+        <ul class="recent">
+          <li>Solo piece for Trombone</li>
+          <li>Richiamo</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #3d5afe; padding-left: 10px;">Strings &amp; keys</summary>
+        <ul class="recent">
+          <li>We're Not Really Strangers</li>
+          <li>Album (2026) — accordion</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #ff5722; padding-left: 10px;">Percussion</summary>
+        <ul class="recent">
+          <li>Opera</li>
+          <li>Richiamo</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #9013fe; padding-left: 10px;">Electronics</summary>
+        <ul class="recent">
+          <li>Tachysensia</li>
+          <li>Corpo</li>
+          <li>Richiamo</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #ff1744; padding-left: 10px;">Voice</summary>
+        <ul class="recent">
+          <li>In Acqua</li>
+          <li>Album (2026)</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #2196f3; padding-left: 10px;">Orchestra</summary>
+        <ul class="recent">
+          <li>By the Grave of the Unknown Queer</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #2ecc40; padding-left: 10px;">Other</summary>
+        <ul class="recent">
+          <li class="meta">None yet — reserved for instruments that don't fit elsewhere</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #4a4a4a; padding-left: 10px;">Interdisciplinary</summary>
+        <ul class="recent">
+          <li>Il Mio, Il Tuo Corpo</li>
+          <li>1st Draft: First Lady</li>
+          <li>Habitat</li>
+          <li>Motore</li>
+          <li>Short Stories</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #ff00c8; padding-left: 10px;">Perre alla Diavola</summary>
+        <ul class="recent">
+          <li>FiTTyKATTA! Liberation is Erotic — with the collective <a href="https://perrealladiavola.com" target="_blank" rel="noopener">Perre alla Diavola</a></li>
+        </ul>
+      </details>
+    </div>
   </main>
 
   <footer>
-    <p>&copy; 2026 Adam A.Ø. Pambianchi. Scores and recordings available on request.</p>
+    <p>&copy; 2026 Adam A.Ø. Pambianchi.</p>
   </footer>
 
 </div>
+
+<script>
+var graphView = document.getElementById('map-graph-view');
+var listView = document.getElementById('map-list-view');
+var showGraphBtn = document.getElementById('show-graph');
+var showListBtn = document.getElementById('show-list');
+
+showGraphBtn.addEventListener('click', function(){
+  graphView.style.display = 'block';
+  listView.style.display = 'none';
+  showGraphBtn.classList.add('active');
+  showListBtn.classList.remove('active');
+});
+showListBtn.addEventListener('click', function(){
+  graphView.style.display = 'none';
+  listView.style.display = 'block';
+  showListBtn.classList.add('active');
+  showGraphBtn.classList.remove('active');
+});
+
+var families = [
+  {id:'winds', label:'winds', x:170, y:120, r:38, color:'#00c2c2'},
+  {id:'brass', label:'brass', x:500, y:100, r:34, color:'#ff9500'},
+  {id:'strings', label:'strings & keys', x:100, y:340, r:34, color:'#3d5afe'},
+  {id:'percussion', label:'percussion', x:470, y:360, r:34, color:'#ff5722'},
+  {id:'electronics', label:'electronics', x:330, y:440, r:36, color:'#9013fe'},
+  {id:'voice', label:'voice', x:330, y:40, r:32, color:'#ff1744'},
+  {id:'orchestra', label:'orchestra', x:580, y:250, r:30, color:'#2196f3'},
+  {id:'other', label:'other', x:600, y:150, r:26, color:'#2ecc40'},
+  {id:'interdisciplinary', label:'interdisciplinary', x:110, y:540, r:44, color:'#4a4a4a'},
+  {id:'perre', label:'Perre alla Diavola', x:560, y:540, r:44, color:'#ff00c8'}
+];
+var pieces = [
+  {id:'p1', label:'Wind Quintet', links:['winds'], x:60, y:190},
+  {id:'p2', label:'Sax solo', links:['winds'], x:230, y:230},
+  {id:'p3', label:'Erbe Selvatiche', links:['winds'], x:90, y:50},
+  {id:'p4', label:'Corpo', links:['winds','electronics'], x:260, y:360},
+  {id:'p5', label:'Album (2026)', links:['winds','voice','strings'], x:420, y:10},
+  {id:'p6', label:'Trombone solo', links:['brass'], x:600, y:30},
+  {id:'p7', label:'Richiamo', links:['brass','percussion','electronics'], x:570, y:180},
+  {id:'p8', label:"We're Not Really Strangers", links:['strings'], x:20, y:420},
+  {id:'p9', label:'Opera', links:['percussion'], x:600, y:430},
+  {id:'p10', label:'Tachysensia', links:['electronics'], x:420, y:520},
+  {id:'p11', label:'In Acqua', links:['voice'], x:200, y:0},
+  {id:'p12', label:'By the Grave of the Unknown Queer', links:['orchestra'], x:620, y:300},
+  {id:'p13', label:'Il Mio, Il Tuo Corpo', links:['interdisciplinary'], x:20, y:590},
+  {id:'p14', label:'1st Draft: First Lady', links:['interdisciplinary'], x:220, y:580},
+  {id:'p15', label:'Habitat', links:['interdisciplinary'], x:10, y:500},
+  {id:'p16', label:'Motore', links:['interdisciplinary'], x:260, y:520},
+  {id:'p17', label:'Short Stories', links:['interdisciplinary'], x:170, y:600},
+  {id:'p18', label:'FiTTyKATTA!', links:['perre'], x:640, y:600}
+];
+
+var nodes = families.map(function(f){ return Object.assign({type:'family'}, f); })
+  .concat(pieces.map(function(p){ return Object.assign({type:'piece', r:20}, p); }));
+var nodeById = {};
+nodes.forEach(function(n){ nodeById[n.id] = n; });
+var edges = [];
+pieces.forEach(function(p){ p.links.forEach(function(fid){ edges.push({from:fid, to:p.id}); }); });
+
+var svg = document.getElementById('graph');
+var edgeLayer = document.getElementById('edges');
+var nodeLayer = document.getElementById('nodes');
+var NS = 'http://www.w3.org/2000/svg';
+
+function drawEdges(){
+  edgeLayer.innerHTML = '';
+  edges.forEach(function(e){
+    var a = nodeById[e.from], b = nodeById[e.to];
+    var line = document.createElementNS(NS,'line');
+    line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
+    line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
+    line.setAttribute('stroke', a.color || '#000000');
+    line.setAttribute('stroke-opacity', a.id === 'perre' ? '0.6' : '0.3');
+    line.setAttribute('stroke-width', '1');
+    edgeLayer.appendChild(line);
+  });
+}
+
+nodes.forEach(function(n){
+  var g = document.createElementNS(NS,'g');
+  var isFamily = n.type === 'family';
+  var circle = document.createElementNS(NS,'circle');
+  circle.setAttribute('r', n.r);
+  circle.setAttribute('fill', isFamily ? n.color : '#ffffff');
+  circle.setAttribute('stroke', isFamily ? n.color : '#000000');
+  circle.setAttribute('stroke-width', isFamily ? '0' : '1');
+  var text = document.createElementNS(NS,'text');
+  text.textContent = n.label;
+  text.setAttribute('text-anchor','middle');
+  text.setAttribute('dy','0.35em');
+  text.setAttribute('font-family','Helvetica Neue, Helvetica, Arial, sans-serif');
+  text.setAttribute('font-size', isFamily ? '11' : '9');
+  text.setAttribute('fill', isFamily ? '#ffffff' : '#000000');
+  g.appendChild(circle);
+  g.appendChild(text);
+  nodeLayer.appendChild(g);
+  n.el = g;
+  g.style.cursor = 'grab';
+
+  function clampX(v){
+    var vb = svg.viewBox.baseVal;
+    return Math.max(n.r, Math.min(vb.width - n.r, v));
+  }
+  function clampY(v){
+    var vb = svg.viewBox.baseVal;
+    return Math.max(n.r, Math.min(vb.height - n.r, v));
+  }
+  n.x = clampX(n.x);
+  n.y = clampY(n.y);
+
+  function pos(){ g.setAttribute('transform', 'translate(' + n.x + ',' + n.y + ')'); }
+  pos();
+
+  var dragging = false, offX = 0, offY = 0;
+  function toSvgPoint(evt){
+    var pt = svg.createSVGPoint();
+    pt.x = evt.clientX; pt.y = evt.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  g.addEventListener('pointerdown', function(evt){
+    dragging = true;
+    g.setPointerCapture(evt.pointerId);
+    var p = toSvgPoint(evt);
+    offX = n.x - p.x; offY = n.y - p.y;
+    g.style.cursor = 'grabbing';
+  });
+  g.addEventListener('pointermove', function(evt){
+    if (!dragging) return;
+    var p = toSvgPoint(evt);
+    n.x = clampX(p.x + offX); n.y = clampY(p.y + offY);
+    pos();
+    drawEdges();
+  });
+  g.addEventListener('pointerup', function(){
+    dragging = false;
+    g.style.cursor = 'grab';
+  });
+});
+
+drawEdges();
+</script>
+
 </body>
 </html>

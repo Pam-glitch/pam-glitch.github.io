@@ -242,7 +242,7 @@ footer p {
 
 .map-graph {
   display: block;
-  border: 1px solid var(--ink);
+  border: 1px solid rgba(0, 0, 0, 0.15);
   margin: 24px 0;
 }
 

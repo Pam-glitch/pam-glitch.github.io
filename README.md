@@ -7,9 +7,8 @@ The live site updates automatically within a minute.
 ## What each file is
 
 - `index.html` — homepage
-- `works.html` — catalog of works (the table)
+- `works.html` — catalog of works, grouped by instrument family (draggable graph, with a toggle to a tap-friendly list)
 - `next.html` — upcoming premieres and performances
-- `map.html` — works grouped by instrument family (draggable graph on desktop, tap-list on mobile)
 - `about.html` — bio, education, performance history
 - `contact.html` — contact info
 - `style.css` — controls colors, fonts, spacing for ALL pages at once
