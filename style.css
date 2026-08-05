@@ -253,27 +253,29 @@ footer p {
   margin: 24px 0;
 }
 
-.graph-scroll {
-  overflow-x: auto;
-}
-
 .graph-wrap {
-  width: max-content;
+  width: 100%;
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
 }
 
-/* Node box: fixed size always — never shrinks, never grows */
+/* Node box: fills the screen on phones (no swiping needed to see
+   it), fixed 680px on desktop (≥900px) */
 .map-graph svg {
-  width: 680px;
+  width: 100%;
   height: auto;
   border: 1px solid rgba(0, 0, 0, 0.15);
   touch-action: pan-y;
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
+}
+
+@media (min-width: 900px) {
+  .graph-wrap { width: max-content; }
+  .map-graph svg { width: 680px; }
 }
 
 /* Neon fuchsia arrows, shown under the graph when a piece is open */
@@ -283,7 +285,7 @@ footer p {
 
 .graph-arrows {
   display: none;
-  width: 680px;
+  width: 100%;
   justify-content: space-between;
   padding: 4px 14px 0;
   box-sizing: border-box;
@@ -293,6 +295,10 @@ footer p {
 
 .graph-arrows.open {
   display: flex;
+}
+
+@media (min-width: 900px) {
+  .graph-arrows { width: 680px; }
 }
 
 /* Piece panel: full-width and stacked (text, then image) on phones —
