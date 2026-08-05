@@ -28,17 +28,18 @@
 
     <div class="map-graph" id="map-graph-view">
       <div class="graph-wrap">
+        <div id="panel-images" class="panel-images-col"></div>
         <svg id="graph" viewBox="0 0 680 620" role="img" aria-label="Diagram of works grouped by instrument family, click to expand and explore">
           <title>Works grouped by instrument family</title>
           <g id="edges"></g>
           <g id="nodes"></g>
         </svg>
-        <aside id="info-panel" class="info-panel">
-          <button type="button" id="panel-close" class="info-panel-close" aria-label="Close">×</button>
-          <div id="panel-content" class="info-panel-content">
+        <div id="panel-text" class="panel-text-col">
+          <button type="button" id="panel-close" class="panel-text-close" aria-label="Close">×</button>
+          <div id="panel-content">
             <p class="meta">Click a family blob to expand it, then click a piece to see details here.</p>
           </div>
-        </aside>
+        </div>
       </div>
     </div>
 
@@ -225,20 +226,23 @@ var NS = 'http://www.w3.org/2000/svg';
 var expanded = {};
 var openPieceId = null;
 
-var panel = document.getElementById('info-panel');
+var panelImages = document.getElementById('panel-images');
+var panelText = document.getElementById('panel-text');
 var panelContent = document.getElementById('panel-content');
 var panelClose = document.getElementById('panel-close');
 
 function closePanel(){
   openPieceId = null;
-  panel.classList.remove('open');
+  panelImages.classList.remove('open');
+  panelText.classList.remove('open');
+  panelImages.innerHTML = '';
   panelContent.innerHTML = '<p class="meta">Click a family blob to expand it, then click a piece to see details here.</p>';
 }
 panelClose.addEventListener('click', closePanel);
 
 function openPanel(piece){
   openPieceId = piece.id;
-  panel.classList.add('open');
+  panelText.classList.add('open');
 
   var textHtml = '';
   if (piece.panelHtml) {
@@ -252,19 +256,19 @@ function openPanel(piece){
       textHtml += '<p><a href="' + piece.url + '" target="_blank" rel="noopener">' + (piece.urlLabel || piece.url) + '</a></p>';
     }
   }
+  panelContent.innerHTML = textHtml;
 
-  var html = '<div class="info-panel-inner">';
   if (piece.images && piece.images.length) {
-    html += '<div class="info-panel-images">';
+    var imgHtml = '';
     piece.images.forEach(function(img){
-      html += '<img src="' + img.src + '" alt="' + (img.alt || '') + '">';
+      imgHtml += '<img src="' + img.src + '" alt="' + (img.alt || '') + '">';
     });
-    html += '</div>';
+    panelImages.innerHTML = imgHtml;
+    panelImages.classList.add('open');
+  } else {
+    panelImages.innerHTML = '';
+    panelImages.classList.remove('open');
   }
-  html += '<div class="info-panel-text">' + textHtml + '</div>';
-  html += '</div>';
-
-  panelContent.innerHTML = html;
 }
 
 function clampX(n, v){

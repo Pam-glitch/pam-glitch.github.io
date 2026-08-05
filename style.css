@@ -217,10 +217,6 @@ footer p {
 @media (max-width: 480px) {
   body { font-size: 16px; padding: 32px 16px 48px; }
   h1 { font-size: 22px; }
-  .info-panel { width: 100%; }
-  .info-panel-inner { flex-direction: column; }
-  .info-panel-images { flex-direction: row; width: 100%; }
-  .info-panel-images img { flex: 1; width: auto; }
 }
 
 /* --- map page: manual toggle between graph and list, graph shown first --- */
@@ -259,7 +255,7 @@ footer p {
 }
 
 .graph-wrap {
-  max-width: 1400px;
+  max-width: 680px;
   margin: 0 auto;
   position: relative;
 }
@@ -274,59 +270,48 @@ footer p {
   user-select: none;
 }
 
-.info-panel {
-  width: 420px;
-  border: none;
-  padding: 0;
-  font-size: 15px;
-  position: relative;
+/* Left column: images, flanking the graph, matching its height exactly */
+.panel-images-col {
   display: none;
-  margin-top: 16px;
-  background: var(--bg);
 }
 
-.info-panel.open {
-  display: block;
-}
-
-.info-panel-inner {
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.info-panel-images {
+.panel-images-col.open {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  width: 130px;
-  flex-shrink: 0;
+  gap: 4px;
 }
 
-.info-panel-images img {
-  width: 130px;
-  height: 100px;
+.panel-images-col img {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
   display: block;
   object-fit: cover;
 }
 
-.info-panel-text {
-  flex: 1;
-  min-width: 0;
+/* Right column: text, flanking the graph on the other side */
+.panel-text-col {
+  display: none;
+  font-size: 15px;
+  position: relative;
+}
+
+.panel-text-col.open {
+  display: block;
+}
+
+.panel-text-col h3 {
+  font-size: 15px;
+  margin: 0 0 6px;
   padding-right: 20px;
 }
 
-.info-panel h3 {
-  font-size: 15px;
-  margin: 0 0 6px;
-}
-
-.info-panel p {
+.panel-text-col p {
   margin: 0 0 8px;
   font-size: 14px;
 }
 
-.info-panel-close {
+.panel-text-close {
   position: absolute;
   top: 0;
   right: 0;
@@ -339,20 +324,46 @@ footer p {
   padding: 0;
 }
 
-/* On wide screens there's real empty margin outside the 1400px graph —
-   let the panel live there instead of squeezing the graph narrower. */
+/* On wide screens, anchor both columns to the graph's own box edges,
+   at its exact height — they scroll and stay locked to the graph. */
 @media (min-width: 1100px) {
-  .info-panel.open {
-    position: fixed;
-    top: 200px;
-    left: calc(50% + (var(--width) / 2) + 40px);
-    right: auto;
-    width: 420px;
-    max-height: 70vh;
+  .panel-images-col.open {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    right: 100%;
+    margin-right: 24px;
+    width: 180px;
+  }
+  .panel-text-col.open {
+    position: absolute;
+    top: 0;
+    height: 100%;
     overflow-y: auto;
-    background: var(--bg);
-    z-index: 10;
-    margin-top: 0;
+    left: 100%;
+    margin-left: 24px;
+    width: 380px;
+  }
+}
+
+/* Below that width there's no room in the margins — stack normally instead */
+@media (max-width: 1099px) {
+  .graph-wrap {
+    display: flex;
+    flex-direction: column;
+  }
+  .map-graph svg {
+    order: 1;
+  }
+  .panel-text-col.open {
+    order: 2;
+    margin-top: 12px;
+  }
+  .panel-images-col.open {
+    order: 3;
+    flex-direction: row;
+    height: 140px;
+    margin-top: 12px;
   }
 }
 
