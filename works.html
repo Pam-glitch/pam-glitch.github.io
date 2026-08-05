@@ -5,7 +5,7 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
 <div class="wrap">
@@ -215,22 +215,47 @@ var pieces = [
 var nodeById = {};
 families.forEach(function(f){ nodeById[f.id] = Object.assign({type:'family'}, f); });
 
-// Pieces connected to more than one family sit at the midpoint of
-// those families, weighted equally — consistent placement rather
-// than a manually chosen spot.
+// Every piece-to-family connection targets the same distance, so
+// spacing reads consistently across the whole graph regardless of
+// how many families a piece links to or how far apart those
+// families sit.
+var LINK_DISTANCE = 95;
+
+// Multi-family pieces: relax the position iteratively so it settles
+// where every linked family pulls it to the same LINK_DISTANCE —
+// an equal-force midpoint rather than a raw average, which breaks
+// down when the families aren't the same distance apart.
+function relaxMultiLinkPosition(links){
+  var pos = {x: 0, y: 0};
+  links.forEach(function(fid){ pos.x += nodeById[fid].x; pos.y += nodeById[fid].y; });
+  pos.x /= links.length;
+  pos.y /= links.length;
+
+  for (var iter = 0; iter < 30; iter++) {
+    var sumX = 0, sumY = 0;
+    links.forEach(function(fid){
+      var f = nodeById[fid];
+      var dx = pos.x - f.x, dy = pos.y - f.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      sumX += f.x + (dx / dist) * LINK_DISTANCE;
+      sumY += f.y + (dy / dist) * LINK_DISTANCE;
+    });
+    pos.x = sumX / links.length;
+    pos.y = sumY / links.length;
+  }
+  return pos;
+}
+
 pieces.forEach(function(p){
   if (p.links.length > 1) {
-    var sumX = 0, sumY = 0;
-    p.links.forEach(function(fid){ sumX += nodeById[fid].x; sumY += nodeById[fid].y; });
-    p.x = sumX / p.links.length;
-    p.y = sumY / p.links.length;
+    var pos = relaxMultiLinkPosition(p.links);
+    p.x = pos.x;
+    p.y = pos.y;
   }
 });
 
-// Pieces connected to exactly one family sit at a fixed distance from
-// it, spaced evenly by angle around that family — same distance for
-// every piece, no manual/random placement.
-var SINGLE_LINK_RADIUS = 95;
+// Single-family pieces sit at the same fixed LINK_DISTANCE from
+// their one family, spaced evenly by angle around it.
 var singleLinkGroups = {};
 pieces.forEach(function(p){
   if (p.links.length === 1) {
@@ -244,10 +269,34 @@ Object.keys(singleLinkGroups).forEach(function(fid){
   var angleStep = (2 * Math.PI) / group.length;
   group.forEach(function(p, i){
     var angle = -Math.PI / 2 + i * angleStep;
-    p.x = center.x + SINGLE_LINK_RADIUS * Math.cos(angle);
-    p.y = center.y + SINGLE_LINK_RADIUS * Math.sin(angle);
+    p.x = center.x + LINK_DISTANCE * Math.cos(angle);
+    p.y = center.y + LINK_DISTANCE * Math.sin(angle);
   });
 });
+
+// Nudge any piece that ended up overlapping a family it isn't
+// actually connected to — it should never sit on top of an
+// unrelated node, only near the ones it links to.
+var PIECE_RADIUS = 20;
+var COLLISION_BUFFER = 10;
+for (var pass = 0; pass < 6; pass++) {
+  var movedAny = false;
+  pieces.forEach(function(p){
+    families.forEach(function(f){
+      if (p.links.indexOf(f.id) !== -1) return;
+      var dx = p.x - f.x, dy = p.y - f.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+      var minDist = f.r + PIECE_RADIUS + COLLISION_BUFFER;
+      if (dist < minDist) {
+        var ux = dx / dist, uy = dy / dist;
+        p.x = f.x + ux * minDist;
+        p.y = f.y + uy * minDist;
+        movedAny = true;
+      }
+    });
+  });
+  if (!movedAny) break;
+}
 
 pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r:20}, p); });
 
