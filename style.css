@@ -28,6 +28,7 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--gray);
+  overflow-x: hidden;
 }
 
 body {
@@ -251,11 +252,17 @@ footer p {
 .map-graph {
   display: block;
   margin: 24px 0;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  box-sizing: border-box;
+  padding: 0 24px;
 }
 
 .graph-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
   display: flex;
-  gap: 16px;
+  gap: 24px;
   align-items: flex-start;
 }
 
@@ -272,11 +279,11 @@ footer p {
 }
 
 .info-panel {
-  width: 240px;
+  width: 320px;
   flex-shrink: 0;
   border: 1px solid var(--ink);
-  padding: 14px;
-  font-size: 14px;
+  padding: 18px;
+  font-size: 15px;
   position: relative;
   display: none;
 }
