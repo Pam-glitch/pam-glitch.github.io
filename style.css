@@ -209,3 +209,67 @@ footer p {
   body { font-size: 16px; padding: 32px 16px 48px; }
   h1 { font-size: 22px; }
 }
+
+/* --- map page: manual toggle between graph and list, graph shown first --- */
+.view-toggle {
+  margin: 20px 0 4px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.view-toggle-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--gray);
+  cursor: pointer;
+}
+
+.view-toggle-btn.active {
+  color: var(--ink);
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.view-toggle .sep {
+  margin: 0 10px;
+  color: var(--ink);
+  opacity: 0.4;
+}
+
+.map-graph {
+  display: block;
+  border: 1px solid var(--ink);
+  margin: 24px 0;
+}
+
+.map-graph svg {
+  width: 100%;
+  height: auto;
+  touch-action: none;
+}
+
+.map-list {
+  display: none;
+}
+
+.map-list details {
+  border-bottom: 1px solid var(--ink);
+}
+
+.map-list summary {
+  padding: 14px 0;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.map-list ul.recent li {
+  border-bottom: none;
+  padding: 6px 0 6px 16px;
+}
