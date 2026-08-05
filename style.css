@@ -257,17 +257,14 @@ footer p {
 .graph-wrap {
   width: max-content;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 24px;
 }
 
 /* Node box: fixed size always — never shrinks, never grows */
 .map-graph svg {
-  order: 1;
   width: 680px;
   height: auto;
-  flex: none;
   border: 1px solid rgba(0, 0, 0, 0.15);
   touch-action: none;
   -webkit-user-select: none;
@@ -275,60 +272,84 @@ footer p {
   user-select: none;
 }
 
-/* Info: shown after the node box */
-.panel-text-col {
+/* Fuchsia arrows, shown pointing down at the graph's edges when a
+   piece is open, hinting at the panel below */
+.graph-arrows {
   display: none;
-  font-size: 15px;
+  width: 680px;
+  justify-content: space-between;
+  padding: 2px 14px 0;
+  box-sizing: border-box;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--accent);
 }
 
-.panel-text-col.open {
-  display: block;
-  order: 2;
-  width: 380px;
+.graph-arrows.open {
+  display: flex;
+}
+
+/* Piece panel: a square the same size as the node box, directly below it */
+.piece-panel {
+  display: none;
+  width: 680px;
+  height: 680px;
+  margin-top: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+  padding: 20px;
   position: relative;
+  gap: 24px;
 }
 
-.panel-text-col h3 {
-  font-size: 15px;
-  margin: 0 0 6px;
-  padding-right: 20px;
+.piece-panel.open {
+  display: flex;
 }
 
-.panel-text-col p {
-  margin: 0 0 8px;
-  font-size: 14px;
-}
-
-.panel-text-close {
+.panel-close {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 12px;
+  right: 14px;
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
   color: var(--ink);
   line-height: 1;
   padding: 0;
 }
 
-/* Images: shown last */
 .panel-images-col {
-  display: none;
-}
-
-.panel-images-col.open {
+  flex: none;
+  width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  order: 3;
-  width: 180px;
+  gap: 8px;
+  overflow-y: auto;
 }
 
 .panel-images-col img {
   width: 100%;
   display: block;
   object-fit: contain;
+}
+
+.panel-text-col {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  overflow-y: auto;
+}
+
+.panel-text-col h3 {
+  font-size: 16px;
+  margin: 0 0 8px;
+  padding-right: 20px;
+}
+
+.panel-text-col p {
+  margin: 0 0 8px;
+  font-size: 14px;
 }
 
 .map-list {
