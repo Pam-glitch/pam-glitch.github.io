@@ -239,7 +239,21 @@ panelClose.addEventListener('click', closePanel);
 function openPanel(piece){
   openPieceId = piece.id;
   panel.classList.add('open');
-  var html = '';
+
+  var textHtml = '';
+  if (piece.panelHtml) {
+    textHtml += piece.panelHtml;
+  } else {
+    textHtml += '<h3>' + (piece.fullLabel || piece.label) + '</h3>';
+    textHtml += '<p class="meta">' + piece.year + '</p>';
+    textHtml += '<p>' + piece.forr + '</p>';
+    textHtml += '<p class="meta">' + piece.where + '</p>';
+    if (piece.url) {
+      textHtml += '<p><a href="' + piece.url + '" target="_blank" rel="noopener">' + (piece.urlLabel || piece.url) + '</a></p>';
+    }
+  }
+
+  var html = '<div class="info-panel-inner">';
   if (piece.images && piece.images.length) {
     html += '<div class="info-panel-images">';
     piece.images.forEach(function(img){
@@ -247,17 +261,9 @@ function openPanel(piece){
     });
     html += '</div>';
   }
-  if (piece.panelHtml) {
-    html += piece.panelHtml;
-  } else {
-    html += '<h3>' + (piece.fullLabel || piece.label) + '</h3>';
-    html += '<p class="meta">' + piece.year + '</p>';
-    html += '<p>' + piece.forr + '</p>';
-    html += '<p class="meta">' + piece.where + '</p>';
-    if (piece.url) {
-      html += '<p><a href="' + piece.url + '" target="_blank" rel="noopener">' + (piece.urlLabel || piece.url) + '</a></p>';
-    }
-  }
+  html += '<div class="info-panel-text">' + textHtml + '</div>';
+  html += '</div>';
+
   panelContent.innerHTML = html;
 }
 
