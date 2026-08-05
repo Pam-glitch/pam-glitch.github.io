@@ -325,8 +325,11 @@ footer p {
 }
 
 /* On wide screens, anchor both columns to the graph's own box edges,
-   at its exact height — they scroll and stay locked to the graph. */
-@media (min-width: 1100px) {
+   at its exact height — they scroll and stay locked to the graph.
+   Needs ~1500px of viewport: 680px centered wrap + room on both
+   sides for the 380px text panel + its 24px gap. Below that, the
+   side panels would get clipped off-screen, so we stack instead. */
+@media (min-width: 1500px) {
   .panel-images-col.open {
     position: absolute;
     top: 0;
@@ -347,22 +350,22 @@ footer p {
 }
 
 /* Below that width there's no room in the margins — stack normally instead */
-@media (max-width: 1099px) {
+@media (max-width: 1499px) {
   .graph-wrap {
     display: flex;
     flex-direction: column;
   }
-  .map-graph svg {
-    order: 1;
-  }
-  .panel-text-col.open {
-    order: 2;
-    margin-top: 12px;
-  }
   .panel-images-col.open {
-    order: 3;
+    order: 1;
     flex-direction: row;
     height: 140px;
+    margin-bottom: 12px;
+  }
+  .map-graph svg {
+    order: 2;
+  }
+  .panel-text-col.open {
+    order: 3;
     margin-top: 12px;
   }
 }

@@ -5,7 +5,7 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 <div class="wrap">
@@ -158,16 +158,16 @@ showListBtn.addEventListener('click', function(){
 });
 
 var families = [
-  {id:'winds', label:'winds', x:170, y:120, r:38, color:'#00c2c2'},
-  {id:'brass', label:'brass', x:500, y:100, r:34, color:'#ff9500'},
-  {id:'strings', label:'strings', x:100, y:340, r:32, color:'#3d5afe'},
-  {id:'keys', label:'keys', x:600, y:150, r:30, color:'#2ecc40'},
-  {id:'percussion', label:'percussion', x:470, y:360, r:34, color:'#ff5722'},
+  {id:'winds', label:'winds', x:170, y:120, r:36, color:'#00c2c2'},
+  {id:'brass', label:'brass', x:500, y:100, r:36, color:'#ff9500'},
+  {id:'strings', label:'strings', x:100, y:340, r:36, color:'#3d5afe'},
+  {id:'keys', label:'keys', x:600, y:150, r:36, color:'#2ecc40'},
+  {id:'percussion', label:'percussion', x:470, y:360, r:36, color:'#ff5722'},
   {id:'electronics', label:'electronics', x:330, y:440, r:36, color:'#9013fe'},
-  {id:'voice', label:'voice', x:330, y:40, r:32, color:'#ff1744'},
-  {id:'orchestra', label:'orchestra', x:580, y:250, r:30, color:'#2196f3'},
-  {id:'interdisciplinary', label:'interdisciplinary', x:110, y:540, r:44, color:'#4a4a4a'},
-  {id:'collabs', label:'COLLABS', x:560, y:540, r:44, color:'#ff00c8'}
+  {id:'voice', label:'voice', x:330, y:40, r:36, color:'#ff1744'},
+  {id:'orchestra', label:'orchestra', x:580, y:250, r:36, color:'#2196f3'},
+  {id:'interdisciplinary', label:'interdisciplinary', x:110, y:540, r:36, color:'#4a4a4a'},
+  {id:'collabs', label:'COLLABS', x:560, y:540, r:36, color:'#ff00c8'}
 ];
 
 var pieces = [
@@ -175,7 +175,7 @@ var pieces = [
   {id:'p2', label:'Sax solo', fullLabel:'Solo piece for Saxophone', links:['winds'], x:230, y:230, year:'2026', forr:'saxophone (Gudrun Faleide Fristad)', where:'Premiere 7 Aug; touring La Plata, Ushuaia, Cajamarca from 24 Aug'},
   {id:'p3', label:'Erbe Selvatiche', links:['winds'], x:90, y:50, year:'2026', forr:'bass clarinet (Madara Elena Mezale)', where:'Norwegian Academy of Music, 24 March'},
   {id:'p4', label:'Corpo', links:['winds','electronics'], x:260, y:360, year:'2025', forr:'electroacoustic, ambisonics (w/ saxophonist Gregory Karanekha)', where:'Laidi Palace, Latvia'},
-  {id:'p5', label:'Album (2026)', links:['winds','voice','keys','collabs'], x:420, y:10, year:'2026', forr:'accordion (Kalle Moberg), saxophone (Mario Gabola), vocals', where:'Label: Dissipatio (IT), September 2026'},
+  {id:'p5', label:'Album (2026)', links:['collabs'], x:420, y:10, year:'2026', forr:'accordion (Kalle Moberg), saxophone (Mario Gabola), vocals', where:'Label: Dissipatio (IT), September 2026'},
   {id:'p6', label:'Trombone solo', fullLabel:'Solo piece for Trombone', links:['brass'], x:600, y:30, year:'TBA', forr:'trombone (Guro Kitterød)', where:'TBA'},
   {id:'p7', label:'Richiamo', links:['brass','percussion','electronics'], x:570, y:180, year:'2025', forr:'trombone, tam-tam, transducer (Guro Kitterød)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
   {id:'p8', label:"We're Not Really Strangers", links:['strings','keys'], x:20, y:420, year:'2026', forr:'cello, two pianos', where:'Norwegian Academy of Music, 16 March'},
@@ -214,6 +214,19 @@ var pieces = [
 
 var nodeById = {};
 families.forEach(function(f){ nodeById[f.id] = Object.assign({type:'family'}, f); });
+
+// Pieces connected to more than one family sit at the midpoint of
+// those families, weighted equally — consistent placement rather
+// than a manually chosen spot.
+pieces.forEach(function(p){
+  if (p.links.length > 1) {
+    var sumX = 0, sumY = 0;
+    p.links.forEach(function(fid){ sumX += nodeById[fid].x; sumY += nodeById[fid].y; });
+    p.x = sumX / p.links.length;
+    p.y = sumY / p.links.length;
+  }
+});
+
 pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r:20}, p); });
 
 var edges = [];
