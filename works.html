@@ -14,24 +14,32 @@
     <h1>Adam A.Ø. Pambianchi</h1>
     <p class="tagline">Composer</p>
     <nav class="nav">
-      <a href="index.html">home</a><span class="sep">|</span><a href="works.html">works</a><span class="sep">|</span><a href="next.html">next</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="contact.html">contact</a>
+      <a href="index.html">home</a><span class="sep">|</span><a href="works.html" class="active">works</a><span class="sep">|</span><a href="next.html">next</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="contact.html">contact</a>
     </nav>
   </header>
 
   <main>
     <h2>works</h2>
-    <p>Drag the nodes around, or switch to a simple list.</p>
+    <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
 
     <div class="view-toggle">
       <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
     </div>
 
     <div class="map-graph" id="map-graph-view">
-      <svg id="graph" viewBox="0 0 680 620" role="img" aria-label="Diagram of works grouped by instrument family, draggable">
-        <title>Works grouped by instrument family</title>
-        <g id="edges"></g>
-        <g id="nodes"></g>
-      </svg>
+      <div class="graph-wrap">
+        <svg id="graph" viewBox="0 0 680 620" role="img" aria-label="Diagram of works grouped by instrument family, click to expand and explore">
+          <title>Works grouped by instrument family</title>
+          <g id="edges"></g>
+          <g id="nodes"></g>
+        </svg>
+        <aside id="info-panel" class="info-panel">
+          <button type="button" id="panel-close" class="info-panel-close" aria-label="Close">×</button>
+          <div id="panel-content" class="info-panel-content">
+            <p class="meta">Click a family blob to expand it, then click a piece to see details here.</p>
+          </div>
+        </aside>
+      </div>
     </div>
 
     <div class="map-list" id="map-list-view">
@@ -53,9 +61,15 @@
         </ul>
       </details>
       <details>
-        <summary style="border-left: 4px solid #3d5afe; padding-left: 10px;">Strings &amp; keys</summary>
+        <summary style="border-left: 4px solid #3d5afe; padding-left: 10px;">Strings</summary>
         <ul class="recent">
           <li>We're Not Really Strangers</li>
+        </ul>
+      </details>
+      <details>
+        <summary style="border-left: 4px solid #2ecc40; padding-left: 10px;">Keys</summary>
+        <ul class="recent">
+          <li>We're Not Really Strangers — piano</li>
           <li>Album (2026) — accordion</li>
         </ul>
       </details>
@@ -88,12 +102,6 @@
         </ul>
       </details>
       <details>
-        <summary style="border-left: 4px solid #2ecc40; padding-left: 10px;">Other</summary>
-        <ul class="recent">
-          <li class="meta">None yet — reserved for instruments that don't fit elsewhere</li>
-        </ul>
-      </details>
-      <details>
         <summary style="border-left: 4px solid #4a4a4a; padding-left: 10px;">Interdisciplinary</summary>
         <ul class="recent">
           <li>Il Mio, Il Tuo Corpo</li>
@@ -104,9 +112,20 @@
         </ul>
       </details>
       <details>
-        <summary style="border-left: 4px solid #ff00c8; padding-left: 10px;">Perre alla Diavola</summary>
+        <summary style="border-left: 4px solid #ff00c8; padding-left: 10px;">Collabs</summary>
         <ul class="recent">
-          <li>FiTTyKATTA! Liberation is Erotic — with the collective <a href="https://perrealladiavola.com" target="_blank" rel="noopener">Perre alla Diavola</a></li>
+          <li>
+            <strong><u>Collective Perre alla Diavola</u></strong><br>
+            <span class="meta">Artists: <a href="https://www.mariagabrielarubio.com" target="_blank" rel="noopener">Maria Gabriela Rubio</a>, <a href="https://www.hf.uio.no/imv/english/people/aca/temporary/vincemad/" target="_blank" rel="noopener">Vincenzo Madaghiele</a>, <a href="https://robinhermit.github.io/about/bio.html" target="_blank" rel="noopener">Robin Morabito</a>, Adam A.Ø. Pambianchi. Photographer: Andreas Sætre. <a href="https://perrealladiavola.com" target="_blank" rel="noopener">perrealladiavola.com</a></span>
+          </li>
+          <li>
+            <strong>FiTTyKATTA! Liberation is Erotic</strong> — 2026<br>
+            <span class="meta">Boksen Noise, Oslo. Covered by <a href="https://www.sagat.no" target="_blank" rel="noopener">Sagat</a>, a Sámi newspaper, journalist Sunniva Katrine Bornøy. Photographer: Andreas Sætre.</span>
+          </li>
+          <li>
+            <strong>Album (2026)</strong><br>
+            <span class="meta">With Kalle Moberg (accordion) and Mario Gabola (saxophone) — Label: Dissipatio (IT), September 2026</span>
+          </li>
         </ul>
       </details>
     </div>
@@ -140,40 +159,62 @@ showListBtn.addEventListener('click', function(){
 var families = [
   {id:'winds', label:'winds', x:170, y:120, r:38, color:'#00c2c2'},
   {id:'brass', label:'brass', x:500, y:100, r:34, color:'#ff9500'},
-  {id:'strings', label:'strings & keys', x:100, y:340, r:34, color:'#3d5afe'},
+  {id:'strings', label:'strings', x:100, y:340, r:32, color:'#3d5afe'},
+  {id:'keys', label:'keys', x:600, y:150, r:30, color:'#2ecc40'},
   {id:'percussion', label:'percussion', x:470, y:360, r:34, color:'#ff5722'},
   {id:'electronics', label:'electronics', x:330, y:440, r:36, color:'#9013fe'},
   {id:'voice', label:'voice', x:330, y:40, r:32, color:'#ff1744'},
   {id:'orchestra', label:'orchestra', x:580, y:250, r:30, color:'#2196f3'},
-  {id:'other', label:'other', x:600, y:150, r:26, color:'#2ecc40'},
   {id:'interdisciplinary', label:'interdisciplinary', x:110, y:540, r:44, color:'#4a4a4a'},
-  {id:'perre', label:'Perre alla Diavola', x:560, y:540, r:44, color:'#ff00c8'}
-];
-var pieces = [
-  {id:'p1', label:'Wind Quintet', links:['winds'], x:60, y:190},
-  {id:'p2', label:'Sax solo', links:['winds'], x:230, y:230},
-  {id:'p3', label:'Erbe Selvatiche', links:['winds'], x:90, y:50},
-  {id:'p4', label:'Corpo', links:['winds','electronics'], x:260, y:360},
-  {id:'p5', label:'Album (2026)', links:['winds','voice','strings'], x:420, y:10},
-  {id:'p6', label:'Trombone solo', links:['brass'], x:600, y:30},
-  {id:'p7', label:'Richiamo', links:['brass','percussion','electronics'], x:570, y:180},
-  {id:'p8', label:"We're Not Really Strangers", links:['strings'], x:20, y:420},
-  {id:'p9', label:'Opera', links:['percussion'], x:600, y:430},
-  {id:'p10', label:'Tachysensia', links:['electronics'], x:420, y:520},
-  {id:'p11', label:'In Acqua', links:['voice'], x:200, y:0},
-  {id:'p12', label:'By the Grave of the Unknown Queer', links:['orchestra'], x:620, y:300},
-  {id:'p13', label:'Il Mio, Il Tuo Corpo', links:['interdisciplinary'], x:20, y:590},
-  {id:'p14', label:'1st Draft: First Lady', links:['interdisciplinary'], x:220, y:580},
-  {id:'p15', label:'Habitat', links:['interdisciplinary'], x:10, y:500},
-  {id:'p16', label:'Motore', links:['interdisciplinary'], x:260, y:520},
-  {id:'p17', label:'Short Stories', links:['interdisciplinary'], x:170, y:600},
-  {id:'p18', label:'FiTTyKATTA!', links:['perre'], x:640, y:600}
+  {id:'collabs', label:'COLLABS', x:560, y:540, r:44, color:'#ff00c8'}
 ];
 
-var nodes = families.map(function(f){ return Object.assign({type:'family'}, f); })
-  .concat(pieces.map(function(p){ return Object.assign({type:'piece', r:20}, p); }));
+var pieces = [
+  {id:'p1', label:'Wind Quintet', links:['winds'], x:60, y:190, year:'2026', forr:'wind quintet', where:'Kammermusikkveka 2026, Norwegian Academy of Music'},
+  {id:'p2', label:'Sax solo', fullLabel:'Solo piece for Saxophone', links:['winds'], x:230, y:230, year:'2026', forr:'saxophone (Gudrun Faleide Fristad)', where:'Premiere 7 Aug; touring La Plata, Ushuaia, Cajamarca from 24 Aug'},
+  {id:'p3', label:'Erbe Selvatiche', links:['winds'], x:90, y:50, year:'2026', forr:'bass clarinet (Madara Elena Mezale)', where:'Norwegian Academy of Music, 24 March'},
+  {id:'p4', label:'Corpo', links:['winds','electronics'], x:260, y:360, year:'2025', forr:'electroacoustic, ambisonics (w/ saxophonist Gregory Karanekha)', where:'Laidi Palace, Latvia'},
+  {id:'p5', label:'Album (2026)', links:['winds','voice','keys','collabs'], x:420, y:10, year:'2026', forr:'accordion (Kalle Moberg), saxophone (Mario Gabola), vocals', where:'Label: Dissipatio (IT), September 2026'},
+  {id:'p6', label:'Trombone solo', fullLabel:'Solo piece for Trombone', links:['brass'], x:600, y:30, year:'TBA', forr:'trombone (Guro Kitterød)', where:'TBA'},
+  {id:'p7', label:'Richiamo', links:['brass','percussion','electronics'], x:570, y:180, year:'2025', forr:'trombone, tam-tam, transducer (Guro Kitterød)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
+  {id:'p8', label:"We're Not Really Strangers", links:['strings','keys'], x:20, y:420, year:'2026', forr:'cello, two pianos', where:'Norwegian Academy of Music, 16 March'},
+  {id:'p9', label:'Opera', links:['percussion'], x:600, y:430, year:'2025', forr:'percussion duo (Lillekontoret)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
+  {id:'p10', label:'Tachysensia', links:['electronics'], x:420, y:520, year:'2025', forr:'speakers & phones', where:'Notam, Sonisk Hage Festival'},
+  {id:'p11', label:'In Acqua', links:['voice'], x:200, y:0, year:'2024', forr:'choir', where:'JVLMA Jauktais Koris, Riga'},
+  {id:'p12', label:'By the Grave of the Unknown Queer', links:['orchestra'], x:620, y:300, year:'2026', forr:'orchestra', where:'Trondheim Symphony Orchestra — workshops Jan & May'},
+  {id:'p13', label:'Il Mio, Il Tuo Corpo', links:['interdisciplinary'], x:20, y:590, year:'2025', forr:'interdisciplinary', where:'Aparte Festival, Vestfold Kunstsenter'},
+  {id:'p14', label:'1st Draft: First Lady', links:['interdisciplinary'], x:220, y:580, year:'2025', forr:'Duo Amoeba', where:'Blitz, Oslo'},
+  {id:'p15', label:'Habitat', links:['interdisciplinary'], x:10, y:500, year:'2025', forr:'interdisciplinary performance', where:'Norwegian Academy of Music'},
+  {id:'p16', label:'Motore', links:['interdisciplinary'], x:260, y:520, year:'2024', forr:'collaborative graduation performance, Clothing & Costume', where:'Oslo National Academy of the Arts (KHiO)'},
+  {id:'p17', label:'Short Stories', links:['interdisciplinary'], x:170, y:600, year:'2024', forr:'interdisciplinary, w/ choreographer Anna Einemo Frøysland', where:'Technical Museum, Oslo'},
+  {id:'p18', label:'Perre alla Diavola', links:['collabs'], x:640, y:600, images:[],
+    panelHtml:'<h3><u>Collective Perre alla Diavola</u></h3>' +
+      '<p class="meta">Artists</p>' +
+      '<p>' +
+      '<a href="https://www.mariagabrielarubio.com" target="_blank" rel="noopener">Maria Gabriela Rubio</a><br>' +
+      '<a href="https://www.hf.uio.no/imv/english/people/aca/temporary/vincemad/" target="_blank" rel="noopener">Vincenzo Madaghiele</a><br>' +
+      '<a href="https://robinhermit.github.io/about/bio.html" target="_blank" rel="noopener">Robin Morabito</a><br>' +
+      'Adam A.Ø. Pambianchi' +
+      '</p>' +
+      '<p class="meta">Photographer: Andreas Sætre</p>' +
+      '<p><a href="https://perrealladiavola.com" target="_blank" rel="noopener">perrealladiavola.com</a></p>'},
+  {id:'p19', label:'FiTTyKATTA!', fullLabel:'FiTTyKATTA! Liberation is Erotic', links:['collabs'], x:500, y:470,
+    images:[
+      {src:'images/works/fittykatta-1.jpg', alt:'Performance still from FiTTyKATTA! Liberation is Erotic'},
+      {src:'images/works/fittykatta-2.jpg', alt:'Event poster for FiTTyKATTA! Liberation is Erotic, 11 April 2026 at Boksen, Hausmania'}
+    ],
+    panelHtml:'<h3>FiTTyKATTA! Liberation is Erotic</h3>' +
+      '<p class="meta">2026 — Boksen Noise, Oslo</p>' +
+      '<p>Curator &amp; co-artist, with Vincenzo Madaghiele and Maria Gabriela Rubio, as part of the collective Perre alla Diavola.</p>' +
+      '<p class="meta">Covered by <a href="https://www.sagat.no" target="_blank" rel="noopener">Sagat</a>, a Sámi newspaper<br>' +
+      'Journalist: Sunniva Katrine Bornøy<br>' +
+      'Photographer: Andreas Sætre</p>'}
+];
+
 var nodeById = {};
-nodes.forEach(function(n){ nodeById[n.id] = n; });
+families.forEach(function(f){ nodeById[f.id] = Object.assign({type:'family'}, f); });
+pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r:20}, p); });
+
 var edges = [];
 pieces.forEach(function(p){ p.links.forEach(function(fid){ edges.push({from:fid, to:p.id}); }); });
 
@@ -181,22 +222,70 @@ var svg = document.getElementById('graph');
 var edgeLayer = document.getElementById('edges');
 var nodeLayer = document.getElementById('nodes');
 var NS = 'http://www.w3.org/2000/svg';
+var expanded = {};
+var openPieceId = null;
+
+var panel = document.getElementById('info-panel');
+var panelContent = document.getElementById('panel-content');
+var panelClose = document.getElementById('panel-close');
+
+function closePanel(){
+  openPieceId = null;
+  panel.classList.remove('open');
+  panelContent.innerHTML = '<p class="meta">Click a family blob to expand it, then click a piece to see details here.</p>';
+}
+panelClose.addEventListener('click', closePanel);
+
+function openPanel(piece){
+  openPieceId = piece.id;
+  panel.classList.add('open');
+  var html = '';
+  if (piece.images && piece.images.length) {
+    html += '<div class="info-panel-images">';
+    piece.images.forEach(function(img){
+      html += '<img src="' + img.src + '" alt="' + (img.alt || '') + '">';
+    });
+    html += '</div>';
+  }
+  if (piece.panelHtml) {
+    html += piece.panelHtml;
+  } else {
+    html += '<h3>' + (piece.fullLabel || piece.label) + '</h3>';
+    html += '<p class="meta">' + piece.year + '</p>';
+    html += '<p>' + piece.forr + '</p>';
+    html += '<p class="meta">' + piece.where + '</p>';
+    if (piece.url) {
+      html += '<p><a href="' + piece.url + '" target="_blank" rel="noopener">' + (piece.urlLabel || piece.url) + '</a></p>';
+    }
+  }
+  panelContent.innerHTML = html;
+}
+
+function clampX(n, v){
+  var vb = svg.viewBox.baseVal;
+  return Math.max(n.r, Math.min(vb.width - n.r, v));
+}
+function clampY(n, v){
+  var vb = svg.viewBox.baseVal;
+  return Math.max(n.r, Math.min(vb.height - n.r, v));
+}
 
 function drawEdges(){
   edgeLayer.innerHTML = '';
   edges.forEach(function(e){
+    if (!expanded[e.from]) return;
     var a = nodeById[e.from], b = nodeById[e.to];
     var line = document.createElementNS(NS,'line');
     line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
     line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
     line.setAttribute('stroke', a.color || '#000000');
-    line.setAttribute('stroke-opacity', a.id === 'perre' ? '0.6' : '0.3');
+    line.setAttribute('stroke-opacity', a.id === 'collabs' ? '0.6' : '0.3');
     line.setAttribute('stroke-width', '1');
     edgeLayer.appendChild(line);
   });
 }
 
-nodes.forEach(function(n){
+function makeNode(n){
   var g = document.createElementNS(NS,'g');
   var isFamily = n.type === 'family';
   var circle = document.createElementNS(NS,'circle');
@@ -204,34 +293,33 @@ nodes.forEach(function(n){
   circle.setAttribute('fill', isFamily ? n.color : '#ffffff');
   circle.setAttribute('stroke', isFamily ? n.color : '#000000');
   circle.setAttribute('stroke-width', isFamily ? '0' : '1');
+  var displayLabel = n.label;
+  if (!isFamily && displayLabel.length > 14) {
+    displayLabel = displayLabel.slice(0, 13) + '…';
+  }
   var text = document.createElementNS(NS,'text');
-  text.textContent = n.label;
+  text.textContent = displayLabel;
   text.setAttribute('text-anchor','middle');
   text.setAttribute('dy','0.35em');
   text.setAttribute('font-family','Helvetica Neue, Helvetica, Arial, sans-serif');
   text.setAttribute('font-size', isFamily ? '11' : '9');
   text.setAttribute('fill', isFamily ? '#ffffff' : '#000000');
+  if (!isFamily) {
+    var tooltip = document.createElementNS(NS,'title');
+    tooltip.textContent = n.fullLabel || n.label;
+    g.appendChild(tooltip);
+  }
   g.appendChild(circle);
   g.appendChild(text);
   nodeLayer.appendChild(g);
-  n.el = g;
-  g.style.cursor = 'grab';
+  g.style.cursor = 'pointer';
 
-  function clampX(v){
-    var vb = svg.viewBox.baseVal;
-    return Math.max(n.r, Math.min(vb.width - n.r, v));
-  }
-  function clampY(v){
-    var vb = svg.viewBox.baseVal;
-    return Math.max(n.r, Math.min(vb.height - n.r, v));
-  }
-  n.x = clampX(n.x);
-  n.y = clampY(n.y);
-
+  n.x = clampX(n, n.x);
+  n.y = clampY(n, n.y);
   function pos(){ g.setAttribute('transform', 'translate(' + n.x + ',' + n.y + ')'); }
   pos();
 
-  var dragging = false, offX = 0, offY = 0;
+  var dragging = false, offX = 0, offY = 0, moved = 0;
   function toSvgPoint(evt){
     var pt = svg.createSVGPoint();
     pt.x = evt.clientX; pt.y = evt.clientY;
@@ -240,6 +328,7 @@ nodes.forEach(function(n){
   g.addEventListener('pointerdown', function(evt){
     evt.preventDefault();
     dragging = true;
+    moved = 0;
     g.setPointerCapture(evt.pointerId);
     var p = toSvgPoint(evt);
     offX = n.x - p.x; offY = n.y - p.y;
@@ -248,17 +337,38 @@ nodes.forEach(function(n){
   g.addEventListener('pointermove', function(evt){
     if (!dragging) return;
     var p = toSvgPoint(evt);
-    n.x = clampX(p.x + offX); n.y = clampY(p.y + offY);
+    var newX = clampX(n, p.x + offX);
+    var newY = clampY(n, p.y + offY);
+    moved += Math.abs(newX - n.x) + Math.abs(newY - n.y);
+    n.x = newX; n.y = newY;
     pos();
     drawEdges();
   });
   g.addEventListener('pointerup', function(){
     dragging = false;
-    g.style.cursor = 'grab';
+    g.style.cursor = 'pointer';
+    if (moved < 4) {
+      if (isFamily) {
+        expanded[n.id] = !expanded[n.id];
+        render();
+      } else {
+        if (openPieceId === n.id) { closePanel(); } else { openPanel(n); }
+      }
+    }
   });
-});
+}
 
-drawEdges();
+function render(){
+  nodeLayer.innerHTML = '';
+  families.forEach(function(f){ makeNode(nodeById[f.id]); });
+  pieces.forEach(function(p){
+    var visible = p.links.some(function(fid){ return expanded[fid]; });
+    if (visible) makeNode(nodeById[p.id]);
+  });
+  drawEdges();
+}
+
+render();
 </script>
 
 </body>
