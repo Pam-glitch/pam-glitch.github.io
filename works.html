@@ -5,7 +5,7 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=21">
+<link rel="stylesheet" href="style.css?v=22">
 </head>
 <body>
 <div class="wrap">
@@ -27,22 +27,24 @@
     </div>
 
     <div class="map-graph" id="map-graph-view">
-      <div class="graph-wrap">
-        <svg id="graph" viewBox="0 0 680 620" role="img" aria-label="Diagram of works grouped by instrument family, click to expand and explore">
-          <title>Works grouped by instrument family</title>
-          <g id="edges"></g>
-          <g id="nodes"></g>
-        </svg>
-        <div id="side-arrow-left" class="side-arrow side-arrow-left" aria-hidden="true">▼</div>
-        <div id="side-arrow-right" class="side-arrow side-arrow-right" aria-hidden="true">▼</div>
-        <div id="graph-arrows" class="graph-arrows" aria-hidden="true">
-          <span>▼</span><span>▼</span>
+      <div class="graph-scroll">
+        <div class="graph-wrap">
+          <svg id="graph" viewBox="0 0 680 620" role="img" aria-label="Diagram of works grouped by instrument family, click to expand and explore">
+            <title>Works grouped by instrument family</title>
+            <g id="edges"></g>
+            <g id="nodes"></g>
+          </svg>
+          <div id="side-arrow-left" class="side-arrow side-arrow-left" aria-hidden="true">▼</div>
+          <div id="side-arrow-right" class="side-arrow side-arrow-right" aria-hidden="true">▼</div>
+          <div id="graph-arrows" class="graph-arrows" aria-hidden="true">
+            <span>▼</span><span>▼</span>
+          </div>
         </div>
-        <div id="piece-panel" class="piece-panel">
-          <button type="button" id="panel-close" class="panel-close" aria-label="Close">×</button>
-          <div id="panel-content" class="panel-text-col"></div>
-          <div id="panel-images" class="panel-images-col"></div>
-        </div>
+      </div>
+      <div id="piece-panel" class="piece-panel">
+        <button type="button" id="panel-close" class="panel-close" aria-label="Close">×</button>
+        <div id="panel-content" class="panel-text-col"></div>
+        <div id="panel-images" class="panel-images-col"></div>
       </div>
     </div>
 

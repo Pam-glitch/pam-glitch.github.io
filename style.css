@@ -251,11 +251,15 @@ footer p {
 
 .map-graph {
   margin: 24px 0;
+}
+
+.graph-scroll {
   overflow-x: auto;
 }
 
 .graph-wrap {
   width: max-content;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -272,8 +276,30 @@ footer p {
   user-select: none;
 }
 
-/* Fuchsia arrows, shown pointing down at the graph's edges when a
-   piece is open, hinting at the panel below */
+/* Neon fuchsia arrows, shown when a piece is open — along the sides
+   of the node box on desktop, and underneath everywhere */
+.side-arrow,
+.graph-arrows {
+  color: #ff00ff;
+}
+
+.side-arrow {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 30px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.side-arrow-left { left: -38px; }
+.side-arrow-right { right: -38px; }
+
+@media (min-width: 900px) {
+  .side-arrow.open { display: block; }
+}
+
 .graph-arrows {
   display: none;
   width: 680px;
@@ -282,28 +308,39 @@ footer p {
   box-sizing: border-box;
   font-size: 24px;
   line-height: 1;
-  color: var(--accent);
 }
 
 .graph-arrows.open {
   display: flex;
 }
 
-/* Piece panel: a square the same size as the node box, directly below it */
+/* Piece panel: full-width and stacked (text, then image) on phones —
+   a fixed 680×680 square, side by side, on wider screens */
 .piece-panel {
   display: none;
-  width: 680px;
-  height: 680px;
+  width: 100%;
+  max-width: 680px;
   margin-top: 8px;
   border: 1px solid rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
   padding: 20px;
   position: relative;
-  gap: 24px;
+  gap: 20px;
 }
 
 .piece-panel.open {
   display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 900px) {
+  .piece-panel {
+    height: 680px;
+  }
+  .piece-panel.open {
+    flex-direction: row;
+    gap: 24px;
+  }
 }
 
 .panel-close {
@@ -320,12 +357,9 @@ footer p {
 }
 
 .panel-images-col {
-  flex: none;
-  width: 200px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow-y: auto;
 }
 
 .panel-images-col img {
@@ -335,10 +369,20 @@ footer p {
 }
 
 .panel-text-col {
-  flex: 1;
-  min-width: 0;
   font-size: 15px;
-  overflow-y: auto;
+}
+
+@media (min-width: 900px) {
+  .panel-images-col {
+    flex: none;
+    width: 200px;
+    overflow-y: auto;
+  }
+  .panel-text-col {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+  }
 }
 
 .panel-text-col h3 {
