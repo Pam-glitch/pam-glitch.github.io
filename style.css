@@ -244,6 +244,9 @@ footer p {
   display: block;
   border: 1px solid rgba(0, 0, 0, 0.15);
   margin: 24px 0;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
 }
 
 .map-graph svg {

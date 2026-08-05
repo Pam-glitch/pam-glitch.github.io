@@ -238,6 +238,7 @@ nodes.forEach(function(n){
     return pt.matrixTransform(svg.getScreenCTM().inverse());
   }
   g.addEventListener('pointerdown', function(evt){
+    evt.preventDefault();
     dragging = true;
     g.setPointerCapture(evt.pointerId);
     var p = toSvgPoint(evt);
