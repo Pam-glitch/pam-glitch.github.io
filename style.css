@@ -276,37 +276,18 @@ footer p {
   user-select: none;
 }
 
-/* Neon fuchsia arrows, shown when a piece is open — along the sides
-   of the node box on desktop, and underneath everywhere */
-.side-arrow,
+/* Neon fuchsia arrows, shown under the graph when a piece is open */
 .graph-arrows {
   color: #ff00ff;
-}
-
-.side-arrow {
-  display: none;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 30px;
-  line-height: 1;
-  pointer-events: none;
-}
-
-.side-arrow-left { left: -38px; }
-.side-arrow-right { right: -38px; }
-
-@media (min-width: 900px) {
-  .side-arrow.open { display: block; }
 }
 
 .graph-arrows {
   display: none;
   width: 680px;
   justify-content: space-between;
-  padding: 2px 14px 0;
+  padding: 4px 14px 0;
   box-sizing: border-box;
-  font-size: 24px;
+  font-size: 34px;
   line-height: 1;
 }
 
