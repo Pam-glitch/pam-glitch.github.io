@@ -5,7 +5,7 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=17">
 </head>
 <body>
 <div class="wrap">
@@ -158,16 +158,16 @@ showListBtn.addEventListener('click', function(){
 });
 
 var families = [
-  {id:'winds', label:'winds', x:170, y:120, r:36, color:'#00c2c2'},
-  {id:'brass', label:'brass', x:500, y:100, r:36, color:'#ff9500'},
-  {id:'strings', label:'strings', x:100, y:340, r:36, color:'#3d5afe'},
-  {id:'keys', label:'keys', x:600, y:150, r:36, color:'#2ecc40'},
-  {id:'percussion', label:'percussion', x:470, y:360, r:36, color:'#ff5722'},
-  {id:'electronics', label:'electronics', x:330, y:440, r:36, color:'#9013fe'},
-  {id:'voice', label:'voice', x:330, y:40, r:36, color:'#ff1744'},
-  {id:'orchestra', label:'orchestra', x:580, y:250, r:36, color:'#2196f3'},
-  {id:'interdisciplinary', label:'interdisciplinary', x:110, y:540, r:36, color:'#4a4a4a'},
-  {id:'collabs', label:'COLLABS', x:560, y:540, r:36, color:'#ff00c8'}
+  {id:'winds', label:'winds', x:170, y:120, r:44, color:'#00c2c2'},
+  {id:'brass', label:'brass', x:500, y:100, r:44, color:'#ff9500'},
+  {id:'strings', label:'strings', x:100, y:340, r:44, color:'#3d5afe'},
+  {id:'keys', label:'keys', x:600, y:150, r:44, color:'#2ecc40'},
+  {id:'percussion', label:'percussion', x:470, y:360, r:44, color:'#ff5722'},
+  {id:'electronics', label:'electronics', x:330, y:440, r:44, color:'#9013fe'},
+  {id:'voice', label:'voice', x:330, y:40, r:44, color:'#ff1744'},
+  {id:'orchestra', label:'orchestra', x:580, y:250, r:44, color:'#2196f3'},
+  {id:'interdisciplinary', label:'interdisciplinary', x:110, y:540, r:44, color:'#4a4a4a'},
+  {id:'collabs', label:'COLLABS', x:560, y:540, r:44, color:'#ff00c8'}
 ];
 
 var pieces = [
@@ -219,7 +219,7 @@ families.forEach(function(f){ nodeById[f.id] = Object.assign({type:'family'}, f)
 // spacing reads consistently across the whole graph regardless of
 // how many families a piece links to or how far apart those
 // families sit.
-var LINK_DISTANCE = 95;
+var LINK_DISTANCE = 110;
 
 // Multi-family pieces: relax the position iteratively so it settles
 // where every linked family pulls it to the same LINK_DISTANCE —
@@ -277,7 +277,7 @@ Object.keys(singleLinkGroups).forEach(function(fid){
 // Nudge any piece that ended up overlapping a family it isn't
 // actually connected to — it should never sit on top of an
 // unrelated node, only near the ones it links to.
-var PIECE_RADIUS = 20;
+var PIECE_RADIUS = 26;
 var COLLISION_BUFFER = 10;
 for (var pass = 0; pass < 6; pass++) {
   var movedAny = false;
@@ -298,7 +298,7 @@ for (var pass = 0; pass < 6; pass++) {
   if (!movedAny) break;
 }
 
-pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r:20}, p); });
+pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r:26}, p); });
 
 var edges = [];
 pieces.forEach(function(p){ p.links.forEach(function(fid){ edges.push({from:fid, to:p.id}); }); });
@@ -396,7 +396,7 @@ function makeNode(n){
   text.setAttribute('text-anchor','middle');
   text.setAttribute('dy','0.35em');
   text.setAttribute('font-family','Helvetica Neue, Helvetica, Arial, sans-serif');
-  text.setAttribute('font-size', isFamily ? '11' : '9');
+  text.setAttribute('font-size', isFamily ? '13' : '11');
   text.setAttribute('fill', isFamily ? '#ffffff' : '#000000');
   if (!isFamily) {
     var tooltip = document.createElementNS(NS,'title');

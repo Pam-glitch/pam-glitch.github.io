@@ -251,32 +251,23 @@ footer p {
 
 .map-graph {
   margin: 24px 0;
-  /* full-bleed: escape the 680px .wrap so there's room for side
-     panels on wide screens, while staying centered on any width */
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  display: flex;
-  justify-content: center;
+  overflow-x: auto;
 }
 
 .graph-wrap {
-  width: 100%;
-  max-width: 1300px;
-  padding: 0 20px;
-  box-sizing: border-box;
+  width: max-content;
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   align-items: flex-start;
   gap: 24px;
 }
 
+/* Node box: fixed size always — never shrinks, never grows */
 .map-graph svg {
-  order: 2;
-  flex: 10 1 480px;
-  max-width: 680px;
-  min-width: 280px;
+  order: 1;
+  width: 680px;
   height: auto;
+  flex: none;
   border: 1px solid rgba(0, 0, 0, 0.15);
   touch-action: none;
   -webkit-user-select: none;
@@ -284,29 +275,7 @@ footer p {
   user-select: none;
 }
 
-/* Images: shown left of the graph when there's room, otherwise
-   wraps above it. Same fixed-order pattern for every screen width. */
-.panel-images-col {
-  display: none;
-}
-
-.panel-images-col.open {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  order: 1;
-  flex: 1 1 140px;
-  max-width: 180px;
-}
-
-.panel-images-col img {
-  width: 100%;
-  display: block;
-  object-fit: contain;
-}
-
-/* Text: shown right of the graph when there's room, otherwise
-   wraps below it. */
+/* Info: shown after the node box */
 .panel-text-col {
   display: none;
   font-size: 15px;
@@ -314,9 +283,8 @@ footer p {
 
 .panel-text-col.open {
   display: block;
-  order: 3;
-  flex: 3 1 280px;
-  max-width: 380px;
+  order: 2;
+  width: 380px;
   position: relative;
 }
 
@@ -342,6 +310,25 @@ footer p {
   color: var(--ink);
   line-height: 1;
   padding: 0;
+}
+
+/* Images: shown last */
+.panel-images-col {
+  display: none;
+}
+
+.panel-images-col.open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  order: 3;
+  width: 180px;
+}
+
+.panel-images-col img {
+  width: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .map-list {
