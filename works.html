@@ -5,7 +5,7 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 <div class="wrap">
@@ -310,6 +310,9 @@ var nodeLayer = document.getElementById('nodes');
 var NS = 'http://www.w3.org/2000/svg';
 var expanded = {};
 var openPieceId = null;
+// Touch devices: tap only, no dragging — keeps normal finger-scroll
+// working over the graph. Desktop drag behavior is unaffected.
+var isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
 var piecePanel = document.getElementById('piece-panel');
 var graphArrows = document.getElementById('graph-arrows');
@@ -421,6 +424,7 @@ function makeNode(n){
     return pt.matrixTransform(svg.getScreenCTM().inverse());
   }
   g.addEventListener('pointerdown', function(evt){
+    if (isTouchDevice) return;
     evt.preventDefault();
     dragging = true;
     moved = 0;
