@@ -557,8 +557,18 @@ function clampY(n, v){
 
 function drawEdges(){
   edgeLayer.innerHTML = '';
+  // A piece is visible because at least one of its families is
+  // open. Once it's visible, draw ALL of its connecting lines —
+  // including to families that aren't open — so a piece linked to
+  // a second family still shows that connection without opening
+  // that family's other pieces. Only the piece's own visibility
+  // depends on an open family; a line's visibility doesn't.
+  var visiblePieceIds = {};
+  pieces.forEach(function(p){
+    if (p.links.some(function(fid){ return expanded[fid]; })) visiblePieceIds[p.id] = true;
+  });
   edges.forEach(function(e){
-    if (!expanded[e.from]) return;
+    if (!visiblePieceIds[e.to]) return;
     var a = nodeById[e.from], b = nodeById[e.to];
     var line = document.createElementNS(NS,'line');
     line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
