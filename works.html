@@ -271,6 +271,106 @@ function settlePieces(visiblePieces){
     }
   }
   resolveLabelOverlaps(visiblePieces);
+  // The leash can pull a piece back into a spot the stack just
+  // cleared, and the stack can push a piece past the leash again —
+  // alternate a few times to settle both, but the leash gets the
+  // final word: staying visibly near the right family matters more
+  // than perfect text spacing in the rare case both can't fully
+  // hold at once (only shows up with almost everything open at
+  // once). A light pass mops up whatever overlap that reintroduces.
+  for (var round = 0; round < 3; round++){
+    var pulled = enforceFamilyLeash(visiblePieces);
+    if (!pulled) break;
+    resolveLabelOverlaps(visiblePieces);
+  }
+  enforceFamilyLeash(visiblePieces);
+  lightCollisionCleanup(visiblePieces);
+  spreadFamilyAngles(visiblePieces);
+  lightCollisionCleanup(visiblePieces);
+  enforceFamilyLeash(visiblePieces);
+}
+
+function lightCollisionCleanup(visiblePieces){
+  for (var pass = 0; pass < 6; pass++){
+    for (var i = 0; i < visiblePieces.length; i++){
+      for (var j = i + 1; j < visiblePieces.length; j++){
+        var a = visiblePieces[i], b = visiblePieces[j];
+        var dx = a.x - b.x, dy = a.y - b.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        var minDist = a.r + b.r + 30;
+        if (dist < minDist){
+          var overlap = (minDist - dist) / 2;
+          var ux = dx / dist, uy = dy / dist;
+          a.x += ux * overlap; a.y += uy * overlap;
+          b.x -= ux * overlap; b.y -= uy * overlap;
+        }
+      }
+    }
+  }
+  visiblePieces.forEach(function(n){ pieceLabelBox(n); });
+}
+
+// Fixing label overlap (above) only ever moves pieces vertically —
+// nothing there ever spreads them around their family horizontally.
+// Left alone, several pieces from the same family can end up nearly
+// stacked in a column below it, so their connecting lines fan out
+// at almost the same angle and overlap each other for most of their
+// length. This spreads siblings apart in angle-from-family, holding
+// each piece's y fixed (the thing that guarantees no label overlap)
+// and solving only for the x that gives it a wider angle.
+var MIN_FAMILY_ANGLE = 9 * Math.PI / 180;
+function spreadFamilyAngles(visiblePieces){
+  families.forEach(function(f){
+    var fx = f.x, fy = f.y;
+    var children = visiblePieces.filter(function(p){ return p.links.indexOf(f.id) !== -1; });
+    if (children.length < 2) return;
+    var entries = children.map(function(p){
+      return { p: p, angle: Math.atan2(p.y - fy, p.x - fx), dy: p.y - fy };
+    });
+    entries.sort(function(a, b){ return a.angle - b.angle; });
+    for (var i = 1; i < entries.length; i++){
+      var prev = entries[i - 1], cur = entries[i];
+      if (cur.angle - prev.angle >= MIN_FAMILY_ANGLE) continue;
+      var newAngle = prev.angle + MIN_FAMILY_ANGLE;
+      // Solve for x that gives this angle at the SAME y (dy fixed) —
+      // that's what keeps the label-stacking result intact.
+      if (Math.abs(Math.sin(newAngle)) < 0.05) continue; // near-horizontal: skip, too unstable to solve for
+      var r = cur.dy / Math.sin(newAngle);
+      if (!isFinite(r) || Math.abs(r) > linkDistanceFor(f.id) * 4) continue; // guard against blow-up
+      cur.p.x = fx + r * Math.cos(newAngle);
+      cur.angle = newAngle;
+    }
+  });
+}
+
+// The label-stacking pass above only knows about avoiding overlap —
+// it can end up pushing a piece a long way down the page to dodge a
+// crowd, with nothing pulling it back toward its own family. Left
+// alone that's how a piece ends up looking like it belongs to a
+// completely different family than the one its line actually goes
+// to. This is the fix: after stacking, anything that's drifted past
+// a generous leash gets pulled back in along the line to its
+// nearest linked family, then one more light pass mops up any
+// overlap that correction reintroduces.
+function enforceFamilyLeash(visiblePieces){
+  var moved = false;
+  visiblePieces.forEach(function(n){
+    var nearest = null, nearestDist = Infinity;
+    n.links.forEach(function(fid){
+      var f = nodeById[fid];
+      var d = Math.sqrt((n.x - f.x) * (n.x - f.x) + (n.y - f.y) * (n.y - f.y));
+      if (d < nearestDist) { nearestDist = d; nearest = f; }
+    });
+    if (!nearest) return;
+    var leash = linkDistanceFor(nearest.id) * 1.9 + 50;
+    if (nearestDist > leash) {
+      var ux = (n.x - nearest.x) / nearestDist, uy = (n.y - nearest.y) / nearestDist;
+      n.x = nearest.x + ux * leash;
+      n.y = nearest.y + uy * leash;
+      moved = true;
+    }
+  });
+  return moved;
 }
 
 // Word count matters here, not the dots: lines are allowed to cross,
@@ -477,8 +577,7 @@ function createNode(n){
     circle.setAttribute('stroke', 'none');
     circle.setAttribute('stroke-width', '0');
   } else {
-    var pieceColor = n.links.length === 1 ? nodeById[n.links[0]].color : '#ffffff';
-    circle.setAttribute('fill', pieceColor);
+    circle.setAttribute('fill', '#ffffff');
     circle.setAttribute('stroke', '#000000');
     circle.setAttribute('stroke-width', '1.2');
   }
@@ -622,6 +721,11 @@ function render(){
 // squeezing labels into a fixed box (which is what caused text to
 // overlap when a lot was expanded at once). Never shrinks below the
 // default VB_W x VB_H size — it only ever grows outward from there.
+// The canvas grows to fit whatever's open, but never shrinks back
+// down again — once it's grown to hold a busy moment, it stays that
+// size. Only the dots move after that; the box itself doesn't jump
+// around, which is what "organic" movement actually requires.
+var savedBounds = null;
 function fitViewBox(visiblePieces){
   var pad = 24;
   var minX = CENTER_X - VB_W / 2, maxX = CENTER_X + VB_W / 2;
@@ -639,6 +743,15 @@ function fitViewBox(visiblePieces){
   });
 
   minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+
+  if (savedBounds) {
+    minX = Math.min(minX, savedBounds.minX);
+    minY = Math.min(minY, savedBounds.minY);
+    maxX = Math.max(maxX, savedBounds.maxX);
+    maxY = Math.max(maxY, savedBounds.maxY);
+  }
+  savedBounds = { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
+
   svg.setAttribute('viewBox', minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY));
 }
 
