@@ -149,14 +149,16 @@ var SAFE_MARGIN = 3000;
 var FAMILY_R = 18;
 var PIECE_R = 5; // small dot; the label sits beside it, not inside it
 
-// ---------- family positions: fixed, on a ring, in score order ----------
-// Families never move — they're the fixed skeleton. Only pieces
-// move, live, each time a family opens or closes.
+// ---------- family positions: a home ring position, but families ----------
+// can now drift a little from it when several crowded families are
+// open together — see repositionOpenFamilies below. A closed family
+// always snaps back to its home spot.
 var FAMILY_RING = 190;
 families.forEach(function(f, i){
   var angle = (i / families.length) * 2 * Math.PI - Math.PI / 2;
   f.x = CENTER_X + FAMILY_RING * Math.cos(angle);
   f.y = CENTER_Y + FAMILY_RING * Math.sin(angle);
+  f.homeX = f.x; f.homeY = f.y;
 });
 
 var nodeById = {};
@@ -270,24 +272,50 @@ function settlePieces(visiblePieces){
       });
     }
   }
-  resolveLabelOverlaps(visiblePieces);
-  // The leash can pull a piece back into a spot the stack just
-  // cleared, and the stack can push a piece past the leash again —
-  // alternate a few times to settle both, but the leash gets the
-  // final word: staying visibly near the right family matters more
-  // than perfect text spacing in the rare case both can't fully
-  // hold at once (only shows up with almost everything open at
-  // once). A light pass mops up whatever overlap that reintroduces.
-  for (var round = 0; round < 3; round++){
-    var pulled = enforceFamilyLeash(visiblePieces);
-    if (!pulled) break;
+  // Post-physics: converge every layout constraint together in a
+  // loop, instead of a fixed one-shot sequence. A fixed sequence is
+  // how a piece ends up sitting on top of an unrelated family — each
+  // fix below only checks its own concern, so running them once in
+  // order lets a later fix quietly re-break an earlier one. Looping
+  // them together and re-checking each time is what actually
+  // converges on a state where nothing overlaps.
+  for (var round = 0; round < 20; round++){
     resolveLabelOverlaps(visiblePieces);
+    var a1 = avoidFamilyDots(visiblePieces);
+    var a2 = enforceFamilyLeash(visiblePieces);
+    var a3 = spreadFamilyAngles(visiblePieces);
+    if (!a1 && !a2 && !a3) break;
   }
-  enforceFamilyLeash(visiblePieces);
+  resolveLabelOverlaps(visiblePieces); // text separation gets the final word
+  for (var finalRound = 0; finalRound < 4; finalRound++){
+    var f1 = avoidFamilyDots(visiblePieces);
+    var f2 = enforceFamilyLeash(visiblePieces);
+    if (!f1 && !f2) break;
+  }
   lightCollisionCleanup(visiblePieces);
-  spreadFamilyAngles(visiblePieces);
-  lightCollisionCleanup(visiblePieces);
-  enforceFamilyLeash(visiblePieces);
+}
+
+// A piece's dot must never land on ANY family's circle — not just
+// the families it's linked to. Nothing else in this file checks
+// that after the very first placement, which is how a piece could
+// end up sitting on top of a family it has nothing to do with.
+function avoidFamilyDots(visiblePieces){
+  var moved = false;
+  visiblePieces.forEach(function(n){
+    families.forEach(function(f){
+      var famNode = nodeById[f.id];
+      var dx = n.x - famNode.x, dy = n.y - famNode.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+      var minDist = n.r + famNode.r + 16;
+      if (dist < minDist){
+        var ux = dx / dist, uy = dy / dist;
+        n.x = famNode.x + ux * minDist;
+        n.y = famNode.y + uy * minDist;
+        moved = true;
+      }
+    });
+  });
+  return moved;
 }
 
 function lightCollisionCleanup(visiblePieces){
@@ -320,6 +348,7 @@ function lightCollisionCleanup(visiblePieces){
 // and solving only for the x that gives it a wider angle.
 var MIN_FAMILY_ANGLE = 9 * Math.PI / 180;
 function spreadFamilyAngles(visiblePieces){
+  var moved = false;
   families.forEach(function(f){
     var fx = f.x, fy = f.y;
     var children = visiblePieces.filter(function(p){ return p.links.indexOf(f.id) !== -1; });
@@ -339,8 +368,10 @@ function spreadFamilyAngles(visiblePieces){
       if (!isFinite(r) || Math.abs(r) > linkDistanceFor(f.id) * 4) continue; // guard against blow-up
       cur.p.x = fx + r * Math.cos(newAngle);
       cur.angle = newAngle;
+      moved = true;
     }
   });
+  return moved;
 }
 
 // The label-stacking pass above only knows about avoiding overlap —
@@ -656,9 +687,73 @@ function visiblePieceList(){
     .filter(function(n){ return n.links.some(function(fid){ return expanded[fid]; }); });
 }
 
+var MAX_OPEN_FAMILIES = 3;
+var openOrder = []; // tracks which families are open, oldest first
+
 function toggleFamily(id){
-  expanded[id] = !expanded[id];
+  if (expanded[id]) {
+    expanded[id] = false;
+    openOrder = openOrder.filter(function(fid){ return fid !== id; });
+  } else {
+    expanded[id] = true;
+    openOrder.push(id);
+    while (openOrder.length > MAX_OPEN_FAMILIES) {
+      var oldest = openOrder.shift();
+      expanded[oldest] = false;
+    }
+  }
   render();
+}
+
+// Closed families always sit exactly on their home ring position —
+// that's the stable default look. When several crowded families are
+// open together, they're allowed to spread apart from each other a
+// little (a spring pulls each one back toward home, so it only
+// drifts as far as the crowding actually requires) — giving the
+// whole layout real room instead of forcing every fix onto the
+// pieces alone.
+function repositionOpenFamilies(){
+  var openFamilies = families.map(function(f){ return nodeById[f.id]; }).filter(function(f){ return expanded[f.id]; });
+
+  families.forEach(function(f){
+    var n = nodeById[f.id];
+    if (!expanded[f.id]) { n.x = n.homeX; n.y = n.homeY; }
+  });
+
+  if (openFamilies.length < 2) {
+    openFamilies.forEach(function(f){ f.x = f.homeX; f.y = f.homeY; });
+    return;
+  }
+
+  openFamilies.forEach(function(f){ f.x = f.homeX; f.y = f.homeY; f.vx = 0; f.vy = 0; });
+  var FORCE_K = 0.9, SPRING_F = 0.05, TICKS_F = 80;
+  for (var t = 0; t < TICKS_F; t++){
+    var alpha = Math.max(1 - t / TICKS_F, 0.05);
+    for (var i = 0; i < openFamilies.length; i++){
+      for (var j = i + 1; j < openFamilies.length; j++){
+        var a = openFamilies[i], b = openFamilies[j];
+        var dx = a.x - b.x, dy = a.y - b.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        // "wanted space" is how far each family's pieces actually
+        // spread (not the tiny dot radius) — two families whose
+        // piece clouds would overlap push apart; two that are
+        // already clear of each other feel nothing and stay home.
+        var wantedSpace = linkDistanceFor(a.id) + linkDistanceFor(b.id) + 55;
+        var shortfall = wantedSpace - dist;
+        if (shortfall <= 0) continue;
+        var ux = dx / dist, uy = dy / dist;
+        var force = FORCE_K * alpha * shortfall;
+        a.vx += ux * force; a.vy += uy * force;
+        b.vx -= ux * force; b.vy -= uy * force;
+      }
+    }
+    openFamilies.forEach(function(f){
+      f.vx += (f.homeX - f.x) * SPRING_F * alpha;
+      f.vy += (f.homeY - f.y) * SPRING_F * alpha;
+      f.vx *= 0.75; f.vy *= 0.75;
+      f.x += f.vx; f.y += f.vy;
+    });
+  }
 }
 
 function render(){
@@ -678,6 +773,7 @@ function render(){
   });
 
   allRepellers = families.map(function(f){ return nodeById[f.id]; });
+  repositionOpenFamilies();
   if (visible.length) settlePieces(visible);
 
   var visibleIds = {};
@@ -697,6 +793,7 @@ function render(){
     var n = nodeById[f.id];
     var g = nodeElements[f.id];
     if (!g) { g = createNode(n); positionNode(n, g, false); }
+    else { positionNode(n, g, true); }
     g.classList.toggle('expanded', !!expanded[f.id]);
   });
 
@@ -743,6 +840,16 @@ function fitViewBox(visiblePieces){
   });
 
   minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+
+  // Cap how far a single render can grow the box, relative to the
+  // default size — this is what actually stops "zoom out": letting
+  // the box widen without limit is what shrinks everything on
+  // screen, since the physical canvas width on the page doesn't
+  // change. Cropped centered on the content, not the origin.
+  var MAX_GROWTH = 1.6;
+  var maxW = VB_W * MAX_GROWTH, maxH = VB_H * MAX_GROWTH;
+  if ((maxX - minX) > maxW) { var cx = (minX + maxX) / 2; minX = cx - maxW / 2; maxX = cx + maxW / 2; }
+  if ((maxY - minY) > maxH) { var cy = (minY + maxY) / 2; minY = cy - maxH / 2; maxY = cy + maxH / 2; }
 
   if (savedBounds) {
     minX = Math.min(minX, savedBounds.minX);

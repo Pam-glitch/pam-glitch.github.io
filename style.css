@@ -289,6 +289,10 @@ footer p {
 
 /* Pieces glide to their new spot instead of jumping, whenever a
    family opens or closes and the layout reflows around it. */
+.family-node {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .piece-node {
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
