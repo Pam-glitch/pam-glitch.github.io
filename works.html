@@ -29,7 +29,6 @@
     <div class="map-graph" id="map-graph-view">
       <div class="graph-wrap">
         <svg id="graph" viewBox="0 0 680 620" role="img" aria-label="Diagram of works grouped by instrument family, click to expand and explore">
-          <title>Works grouped by instrument family</title>
           <g id="edges"></g>
           <g id="nodes"></g>
         </svg>
@@ -45,91 +44,10 @@
     </div>
 
     <div class="map-list" id="map-list-view">
-      <details open>
-        <summary style="border-left: 4px solid #00c2c2; padding-left: 10px;">Winds</summary>
-        <ul class="recent">
-          <li>Wind Quintet</li>
-          <li>Solo piece for Saxophone</li>
-          <li>Erbe Selvatiche</li>
-          <li>Corpo</li>
-          <li>Album (2026)</li>
-        </ul>
-      </details>
-      <details>
-        <summary style="border-left: 4px solid #ff9500; padding-left: 10px;">Brass</summary>
-        <ul class="recent">
-          <li>Solo piece for Trombone</li>
-          <li>Richiamo</li>
-        </ul>
-      </details>
-      <details>
-        <summary style="border-left: 4px solid #3d5afe; padding-left: 10px;">Strings</summary>
-        <ul class="recent">
-          <li>We're Not Really Strangers</li>
-        </ul>
-      </details>
-      <details>
-        <summary style="border-left: 4px solid #2ecc40; padding-left: 10px;">Keys</summary>
-        <ul class="recent">
-          <li>We're Not Really Strangers — piano</li>
-          <li>Album (2026) — accordion</li>
-        </ul>
-      </details>
-      <details>
-        <summary style="border-left: 4px solid #ff5722; padding-left: 10px;">Percussion</summary>
-        <ul class="recent">
-          <li>Opera</li>
-          <li>Richiamo</li>
-        </ul>
-      </details>
-      <details>
-        <summary style="border-left: 4px solid #9013fe; padding-left: 10px;">Electronics</summary>
-        <ul class="recent">
-          <li>Tachysensia</li>
-          <li>Corpo</li>
-          <li>Richiamo</li>
-        </ul>
-      </details>
-      <details>
-        <summary style="border-left: 4px solid #ff1744; padding-left: 10px;">Voice</summary>
-        <ul class="recent">
-          <li>In Acqua</li>
-          <li>Album (2026)</li>
-        </ul>
-      </details>
-      <details>
-        <summary style="border-left: 4px solid #2196f3; padding-left: 10px;">Orchestra</summary>
-        <ul class="recent">
-          <li>By the Grave of the Unknown Queer</li>
-        </ul>
-      </details>
-      <details>
-        <summary style="border-left: 4px solid #4a4a4a; padding-left: 10px;">Interdisciplinary</summary>
-        <ul class="recent">
-          <li>Il Mio, Il Tuo Corpo</li>
-          <li>1st Draft: First Lady</li>
-          <li>Habitat</li>
-          <li>Motore</li>
-          <li>Short Stories</li>
-        </ul>
-      </details>
-      <details>
-        <summary style="border-left: 4px solid #ff00c8; padding-left: 10px;">Collabs</summary>
-        <ul class="recent">
-          <li>
-            <strong><u>Collective Perre alla Diavola</u></strong><br>
-            <span class="meta">Artists: <a href="https://www.mariagabrielarubio.com" target="_blank" rel="noopener">Maria Gabriela Rubio</a>, <a href="https://www.hf.uio.no/imv/english/people/aca/temporary/vincemad/" target="_blank" rel="noopener">Vincenzo Madaghiele</a>, <a href="https://robinhermit.github.io/about/bio.html" target="_blank" rel="noopener">Robin Morabito</a>, Adam A.Ø. Pambianchi. Photographer: Andreas Sætre. <a href="https://perrealladiavola.com" target="_blank" rel="noopener">perrealladiavola.com</a></span>
-          </li>
-          <li>
-            <strong>FiTTyKATTA! Liberation is Erotic</strong> — 2026<br>
-            <span class="meta">Boksen Noise, Oslo. Covered by <a href="https://www.sagat.no" target="_blank" rel="noopener">Sagat</a>, a Sámi newspaper, journalist Sunniva Katrine Bornøy. Photographer: Andreas Sætre.</span>
-          </li>
-          <li>
-            <strong>Album (2026)</strong><br>
-            <span class="meta">With Kalle Moberg (accordion) and Mario Gabola (saxophone) — Label: Dissipatio (IT), September 2026</span>
-          </li>
-        </ul>
-      </details>
+      <div class="view-toggle list-order-toggle">
+        <button type="button" id="show-by-family" class="view-toggle-btn active">by family</button><span class="sep">|</span><button type="button" id="show-by-year" class="view-toggle-btn">by year</button>
+      </div>
+      <div id="list-content"></div>
     </div>
   </main>
 
@@ -159,18 +77,19 @@ showListBtn.addEventListener('click', function(){
 });
 
 // Families: color + short label only. Order follows standard
-// orchestral score order (woodwinds, brass, percussion, keys,
-// voice, strings), then the non-instrument categories after.
-// Position is fixed on a ring — families never move. Only pieces
-// move, to make room when a family is opened.
+// orchestral score order: woodwinds, brass, percussion, then the
+// "Others" tier (keys, voice, electronics), then strings — then the
+// non-instrument categories after. Position is fixed on a ring —
+// families never move. Only pieces move, to make room when a
+// family is opened.
 var families = [
   {id:'winds', label:'winds', color:'#00c2c2'},
   {id:'brass', label:'brass', color:'#ff9500'},
   {id:'percussion', label:'percussion', color:'#ff5722'},
   {id:'keys', label:'keys', color:'#2ecc40'},
   {id:'voice', label:'voice', color:'#ff1744'},
-  {id:'strings', label:'strings', color:'#3d5afe'},
   {id:'electronics', label:'electronics', color:'#9013fe'},
+  {id:'strings', label:'strings', color:'#3d5afe'},
   {id:'orchestra', label:'orchestra', color:'#2196f3'},
   {id:'interdisciplinary', label:'interdisciplinary', color:'#4a4a4a'},
   {id:'collabs', label:'collabs', color:'#ff00c8'}
@@ -194,7 +113,7 @@ var pieces = [
   {id:'p15', label:'Habitat', links:['interdisciplinary'], year:'2025', forr:'interdisciplinary performance', where:'Norwegian Academy of Music'},
   {id:'p16', label:'Motore', links:['interdisciplinary'], year:'2024', forr:'collaborative graduation performance, Clothing & Costume', where:'Oslo National Academy of the Arts (KHiO)'},
   {id:'p17', label:'Short Stories', links:['interdisciplinary'], year:'2024', forr:'interdisciplinary, w/ choreographer Anna Einemo Frøysland', where:'Technical Museum, Oslo'},
-  {id:'p18', label:'Perre alla Diavola', links:['collabs'], images:[],
+  {id:'p18', label:'Perre alla Diavola', links:['collabs'], year:'2026', note:'Collective with Maria Gabriela Rubio, Vincenzo Madaghiele & Robin Morabito', images:[],
     panelHtml:'<h3><u>Collective Perre alla Diavola</u></h3>' +
       '<p class="meta">Artists</p>' +
       '<p>' +
@@ -205,7 +124,7 @@ var pieces = [
       '</p>' +
       '<p class="meta">Photographer: Andreas Sætre</p>' +
       '<p><a href="https://perrealladiavola.com" target="_blank" rel="noopener">perrealladiavola.com</a></p>'},
-  {id:'p19', label:'FiTTyKATTA!', fullLabel:'FiTTyKATTA! Liberation is Erotic', links:['collabs'],
+  {id:'p19', label:'FiTTyKATTA!', fullLabel:'FiTTyKATTA! Liberation is Erotic', links:['collabs'], year:'2026', note:'Boksen Noise, Oslo — curator & co-artist, with Perre alla Diavola',
     images:[
       {src:'images/work/fittykatta-1.jpg', alt:'Performance still from FiTTyKATTA! Liberation is Erotic'},
       {src:'images/work/fittykatta-2.jpg', alt:'Event poster for FiTTyKATTA! Liberation is Erotic, 11 April 2026 at Boksen, Hausmania'}
@@ -219,8 +138,14 @@ var pieces = [
 ];
 
 // ---------- sizing ----------
+// VB_W/VB_H are the default canvas size — what's shown when little
+// or nothing is open. The canvas itself grows to fit whatever's
+// actually visible (see fitViewBox below), the same way a canvas
+// app doesn't crop content that doesn't fit; SAFE_MARGIN is only a
+// generous backstop against genuine runaway, not a real boundary.
 var VB_W = 680, VB_H = 600;
 var CENTER_X = VB_W / 2, CENTER_Y = VB_H / 2;
+var SAFE_MARGIN = 3000;
 var FAMILY_R = 18;
 var PIECE_R = 5; // small dot; the label sits beside it, not inside it
 
@@ -317,7 +242,7 @@ function settlePieces(visiblePieces){
       n.x += n.vx; n.y += n.vy;
     });
   }
-  // hard collision cleanup so nothing ends up overlapping
+  // hard collision cleanup so dots never overlap
   for (var pass = 0; pass < 8; pass++){
     for (var i = 0; i < visiblePieces.length; i++){
       for (var j = i + 1; j < visiblePieces.length; j++){
@@ -345,6 +270,92 @@ function settlePieces(visiblePieces){
       });
     }
   }
+  resolveLabelOverlaps(visiblePieces);
+}
+
+// Word count matters here, not the dots: lines are allowed to cross,
+// but no piece of text may ever sit on top of another. Labels point
+// outward — left if the piece sits left of centre, right if it sits
+// right. Within each side, labels are sorted top-to-bottom and
+// stacked with a guaranteed minimum gap (the same technique chart
+// libraries use for leader-line labels) — deterministic, so unlike
+// a pairwise push simulation it can't get stuck oscillating between
+// three labels that all overlap each other.
+function approxLabelWidth(str){
+  return Math.max(24, str.length * 6.4 + 6);
+}
+var LABEL_HALF_H = 9;
+var LABEL_GAP = 5;
+
+function pieceLabelBox(n){
+  var w = approxLabelWidth(n.fullLabel || n.label);
+  n.labelSide = n.x >= CENTER_X ? 1 : -1;
+  var left, right;
+  if (n.labelSide === 1) { left = n.x - n.r; right = n.x + n.r + 8 + w; }
+  else { left = n.x - n.r - 8 - w; right = n.x + n.r; }
+  return { left: left, right: right, top: n.y - LABEL_HALF_H, bottom: n.y + LABEL_HALF_H };
+}
+
+function familyLabelBox(f){
+  var w = approxLabelWidth(f.label);
+  return {
+    left: f.x - Math.max(f.r, w / 2) - 4,
+    right: f.x + Math.max(f.r, w / 2) + 4,
+    top: f.y - f.r - 24,
+    bottom: f.y + f.r
+  };
+}
+
+function boxesOverlap(a, b){
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
+function stackBySide(visiblePieces){
+  var familyBoxes = families.map(function(f){ return familyLabelBox(nodeById[f.id]); });
+  [-1, 1].forEach(function(side){
+    var group = visiblePieces.filter(function(n){ return n.labelSide === side; });
+    group.sort(function(a, b){ return a.y - b.y; });
+    var placed = []; // real boxes of pieces already placed on this side
+    group.forEach(function(n){
+      var pBox = pieceLabelBox(n);
+      var guard = 0;
+      var conflict = true;
+      // Walk down past anything already there — family box or an
+      // earlier piece — until clear. Only ever moves forward (y
+      // increases), so this always terminates and, because every
+      // earlier item on this side is already final, never needs to
+      // be revisited once placed.
+      while (conflict && guard < 40) {
+        conflict = false;
+        for (var f = 0; f < familyBoxes.length; f++){
+          if (boxesOverlap(pBox, familyBoxes[f])) {
+            n.y = familyBoxes[f].bottom + LABEL_HALF_H + LABEL_GAP;
+            pBox = pieceLabelBox(n);
+            conflict = true;
+          }
+        }
+        for (var p = 0; p < placed.length; p++){
+          if (boxesOverlap(pBox, placed[p])) {
+            n.y = placed[p].bottom + LABEL_HALF_H + LABEL_GAP;
+            pBox = pieceLabelBox(n);
+            conflict = true;
+          }
+        }
+        guard++;
+      }
+      placed.push(pBox);
+    });
+  });
+}
+
+function resolveLabelOverlaps(visiblePieces){
+  visiblePieces.forEach(function(n){ pieceLabelBox(n); }); // assigns labelSide
+  stackBySide(visiblePieces);
+  visiblePieces.forEach(function(n){
+    n.x = clampX(n, n.x);
+    n.y = clampY(n, n.y);
+    pieceLabelBox(n); // finalize labelSide for rendering
+  });
 }
 
 var svg = document.getElementById('graph');
@@ -407,10 +418,10 @@ function openPanel(piece){
 }
 
 function clampX(n, v){
-  return Math.max(n.r, Math.min(VB_W - n.r, v));
+  return Math.max(n.r - SAFE_MARGIN, Math.min(SAFE_MARGIN * 2 - n.r, v));
 }
 function clampY(n, v){
-  return Math.max(n.r, Math.min(VB_H - n.r, v));
+  return Math.max(n.r - SAFE_MARGIN, Math.min(SAFE_MARGIN * 2 - n.r, v));
 }
 
 function drawEdges(){
@@ -439,6 +450,17 @@ function positionNode(n, g, animate){
     // force layout, then restore the transition for future moves
     g.getBoundingClientRect();
     g.style.transition = '';
+  }
+}
+
+function updatePieceLabel(n, textEl){
+  var side = n.labelSide === -1 ? -1 : 1;
+  if (side === 1) {
+    textEl.setAttribute('text-anchor', 'start');
+    textEl.setAttribute('x', n.r + 6);
+  } else {
+    textEl.setAttribute('text-anchor', 'end');
+    textEl.setAttribute('x', -(n.r + 6));
   }
 }
 
@@ -476,13 +498,12 @@ function createNode(n){
     var text = document.createElementNS(NS,'text');
     text.textContent = n.fullLabel || n.label;
     text.setAttribute('class', 'p-label');
-    text.setAttribute('text-anchor', 'start');
-    text.setAttribute('x', n.r + 6);
     text.setAttribute('dy', '0.35em');
     text.setAttribute('font-family', 'Helvetica Neue, Helvetica, Arial, sans-serif');
     text.setAttribute('font-size', '11');
     text.setAttribute('fill', '#000000');
     g.appendChild(text);
+    updatePieceLabel(n, text);
   }
 
   nodeLayer.appendChild(g);
@@ -508,9 +529,10 @@ function createNode(n){
   g.addEventListener('pointermove', function(evt){
     if (!dragging) return;
     var p = toSvgPoint(evt);
-    n.x = clampX(n, p.x + offX);
-    n.y = clampY(n, p.y + offY);
-    moved += Math.abs(n.x) + Math.abs(n.y);
+    var newX = clampX(n, p.x + offX);
+    var newY = clampY(n, p.y + offY);
+    moved += Math.abs(newX - n.x) + Math.abs(newY - n.y);
+    n.x = newX; n.y = newY;
     positionNode(n, g, false);
     drawEdges();
   });
@@ -584,16 +606,120 @@ function render(){
     var g = nodeElements[n.id];
     if (g) {
       positionNode(n, g, true);
+      var labelEl = g.querySelector('.p-label');
+      if (labelEl) updatePieceLabel(n, labelEl);
     } else {
       g = createNode(n);
       positionNode(n, g, false);
     }
   });
 
+  fitViewBox(visible);
   drawEdges();
 }
 
+// The canvas grows to fit whatever's currently open, rather than
+// squeezing labels into a fixed box (which is what caused text to
+// overlap when a lot was expanded at once). Never shrinks below the
+// default VB_W x VB_H size — it only ever grows outward from there.
+function fitViewBox(visiblePieces){
+  var pad = 24;
+  var minX = CENTER_X - VB_W / 2, maxX = CENTER_X + VB_W / 2;
+  var minY = CENTER_Y - VB_H / 2, maxY = CENTER_Y + VB_H / 2;
+
+  families.forEach(function(f){
+    var box = familyLabelBox(nodeById[f.id]);
+    minX = Math.min(minX, box.left); maxX = Math.max(maxX, box.right);
+    minY = Math.min(minY, box.top); maxY = Math.max(maxY, box.bottom);
+  });
+  visiblePieces.forEach(function(n){
+    var box = pieceLabelBox(n);
+    minX = Math.min(minX, box.left); maxX = Math.max(maxX, box.right);
+    minY = Math.min(minY, box.top); maxY = Math.max(maxY, box.bottom);
+  });
+
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  svg.setAttribute('viewBox', minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY));
+}
+
 render();
+
+// ---------- plain-list view: generated from the same data as the ----------
+// graph above, so a new piece only ever needs adding in one place.
+// Two orderings: by family (matches the graph's fixed order) and by
+// year (chronological; each title gets a small dot in its family's
+// colour, but the year headings themselves stay neutral).
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function pieceMetaLine(p){
+  if (p.note) return p.note;
+  var parts = [];
+  if (p.forr) parts.push(p.forr);
+  if (p.where) parts.push(p.where);
+  return parts.join(' — ');
+}
+
+function pieceListItem(p, withDot){
+  var dot = withDot
+    ? '<span class="piece-dot" style="background-color:' + nodeById[p.links[0]].color + '"></span>'
+    : '';
+  var meta = pieceMetaLine(p);
+  return '<li>' + dot + (p.fullLabel || p.label) +
+    (meta ? '<br><span class="meta">' + meta + '</span>' : '') +
+    '</li>';
+}
+
+function renderListByFamily(){
+  var html = '';
+  families.forEach(function(f, i){
+    var members = pieces.filter(function(p){ return p.links.indexOf(f.id) !== -1; });
+    if (!members.length) return;
+    html += '<details' + (i === 0 ? ' open' : '') + '>' +
+      '<summary style="border-left: 4px solid ' + f.color + '; padding-left: 10px;">' + cap(f.label) + '</summary>' +
+      '<ul class="recent">' + members.map(function(p){ return pieceListItem(p, false); }).join('') + '</ul>' +
+      '</details>';
+  });
+  document.getElementById('list-content').innerHTML = html;
+}
+
+function renderListByYear(){
+  var byYear = {};
+  var yearOrder = [];
+  pieces.forEach(function(p){
+    var y = p.year || 'TBA';
+    if (!byYear[y]) { byYear[y] = []; yearOrder.push(y); }
+    byYear[y].push(p);
+  });
+  yearOrder.sort(function(a, b){
+    var na = parseInt(a, 10), nb = parseInt(b, 10);
+    if (isNaN(na)) return 1;   // non-numeric (TBA) sinks to the end
+    if (isNaN(nb)) return -1;
+    return nb - na;            // most recent first
+  });
+  var html = '';
+  yearOrder.forEach(function(y, i){
+    html += '<details' + (i === 0 ? ' open' : '') + '>' +
+      '<summary style="border-left: 4px solid var(--ink); opacity: 0.55; padding-left: 10px;">' + y + '</summary>' +
+      '<ul class="recent">' + byYear[y].map(function(p){ return pieceListItem(p, true); }).join('') + '</ul>' +
+      '</details>';
+  });
+  document.getElementById('list-content').innerHTML = html;
+}
+
+var showByFamilyBtn = document.getElementById('show-by-family');
+var showByYearBtn = document.getElementById('show-by-year');
+showByFamilyBtn.addEventListener('click', function(){
+  renderListByFamily();
+  showByFamilyBtn.classList.add('active');
+  showByYearBtn.classList.remove('active');
+});
+showByYearBtn.addEventListener('click', function(){
+  renderListByYear();
+  showByYearBtn.classList.add('active');
+  showByFamilyBtn.classList.remove('active');
+});
+
+renderListByFamily();
 </script>
 
 </body>
