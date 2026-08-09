@@ -841,22 +841,25 @@ function fitViewBox(visiblePieces){
 
   minX -= pad; minY -= pad; maxX += pad; maxY += pad;
 
-  // Cap how far a single render can grow the box, relative to the
-  // default size — this is what actually stops "zoom out": letting
-  // the box widen without limit is what shrinks everything on
-  // screen, since the physical canvas width on the page doesn't
-  // change. Cropped centered on the content, not the origin.
-  var MAX_GROWTH = 1.6;
-  var maxW = VB_W * MAX_GROWTH, maxH = VB_H * MAX_GROWTH;
-  if ((maxX - minX) > maxW) { var cx = (minX + maxX) / 2; minX = cx - maxW / 2; maxX = cx + maxW / 2; }
-  if ((maxY - minY) > maxH) { var cy = (minY + maxY) / 2; minY = cy - maxH / 2; maxY = cy + maxH / 2; }
-
   if (savedBounds) {
     minX = Math.min(minX, savedBounds.minX);
     minY = Math.min(minY, savedBounds.minY);
     maxX = Math.max(maxX, savedBounds.maxX);
     maxY = Math.max(maxY, savedBounds.maxY);
   }
+
+  // Cap the box at a hard maximum size, relative to the default —
+  // applied to the ACCUMULATED total, after merging with history,
+  // not just to what this one render needed. Capping only the
+  // per-render contribution and then merging that into a total that
+  // itself has no cap is exactly how this kept climbing: each newly
+  // opened family added its own capped sliver, but nothing ever
+  // capped the running sum. This is what actually stops "zoom out."
+  var MAX_GROWTH = 1.6;
+  var maxW = VB_W * MAX_GROWTH, maxH = VB_H * MAX_GROWTH;
+  if ((maxX - minX) > maxW) { var cx = (minX + maxX) / 2; minX = cx - maxW / 2; maxX = cx + maxW / 2; }
+  if ((maxY - minY) > maxH) { var cy = (minY + maxY) / 2; minY = cy - maxH / 2; maxY = cy + maxH / 2; }
+
   savedBounds = { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
 
   svg.setAttribute('viewBox', minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY));
