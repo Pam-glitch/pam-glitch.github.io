@@ -5,7 +5,7 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=25">
+<link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
 <div class="wrap">
@@ -158,17 +158,19 @@ showListBtn.addEventListener('click', function(){
   showGraphBtn.classList.remove('active');
 });
 
-// Families: color + short label only. No fixed x/y — position is
-// decided by the force simulation below, then frozen (same idea as
-// Obsidian's graph: it settles once, then holds still).
+// Families: color + short label only. Order follows standard
+// orchestral score order (woodwinds, brass, percussion, keys,
+// voice, strings), then the non-instrument categories after.
+// Position is fixed on a ring — families never move. Only pieces
+// move, to make room when a family is opened.
 var families = [
   {id:'winds', label:'winds', color:'#00c2c2'},
   {id:'brass', label:'brass', color:'#ff9500'},
-  {id:'strings', label:'strings', color:'#3d5afe'},
-  {id:'keys', label:'keys', color:'#2ecc40'},
   {id:'percussion', label:'percussion', color:'#ff5722'},
-  {id:'electronics', label:'electronics', color:'#9013fe'},
+  {id:'keys', label:'keys', color:'#2ecc40'},
   {id:'voice', label:'voice', color:'#ff1744'},
+  {id:'strings', label:'strings', color:'#3d5afe'},
+  {id:'electronics', label:'electronics', color:'#9013fe'},
   {id:'orchestra', label:'orchestra', color:'#2196f3'},
   {id:'interdisciplinary', label:'interdisciplinary', color:'#4a4a4a'},
   {id:'collabs', label:'collabs', color:'#ff00c8'}
@@ -219,112 +221,128 @@ var pieces = [
 // ---------- sizing ----------
 var VB_W = 680, VB_H = 600;
 var CENTER_X = VB_W / 2, CENTER_Y = VB_H / 2;
-var FAMILY_R = 18;   // small colour dot — label only shows on hover / when expanded
-var PIECE_R = 26;
+var FAMILY_R = 18;
+var PIECE_R = 5; // small dot; the label sits beside it, not inside it
 
-// ---------- seed positions ----------
-// Families start evenly spaced on a ring; pieces start jittered near
-// their (first) linked family. The simulation below reshuffles all
-// of this — the seed just gives it a sane, non-overlapping start.
+// ---------- family positions: fixed, on a ring, in score order ----------
+// Families never move — they're the fixed skeleton. Only pieces
+// move, live, each time a family opens or closes.
 var FAMILY_RING = 190;
 families.forEach(function(f, i){
   var angle = (i / families.length) * 2 * Math.PI - Math.PI / 2;
   f.x = CENTER_X + FAMILY_RING * Math.cos(angle);
   f.y = CENTER_Y + FAMILY_RING * Math.sin(angle);
-  f.vx = 0; f.vy = 0;
 });
 
 var nodeById = {};
 families.forEach(function(f){ nodeById[f.id] = Object.assign({type:'family', r: FAMILY_R}, f); });
 
-pieces.forEach(function(p, i){
-  var anchor = nodeById[p.links[0]];
-  var angle = (i * 2.399963) % (2 * Math.PI); // golden-angle spread, avoids clumping
-  p.x = anchor.x + 36 * Math.cos(angle);
-  p.y = anchor.y + 36 * Math.sin(angle);
-  p.vx = 0; p.vy = 0;
-});
-pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r: PIECE_R}, p); });
-
-var allNodes = families.map(function(f){ return nodeById[f.id]; })
-  .concat(pieces.map(function(p){ return nodeById[p.id]; }));
-
 var edges = [];
 pieces.forEach(function(p){ p.links.forEach(function(fid){ edges.push({from:fid, to:p.id}); }); });
 
-// ---------- force simulation (settle once, then freeze) ----------
-// Same idea as Obsidian's graph view: nodes repel each other, links
-// pull connected pairs toward a target distance, and everything is
-// nudged gently toward the centre so it doesn't drift off. Runs for
-// a fixed number of ticks while cooling down, then the result is
-// locked in — no physics keeps running after the page loads.
-// Families stay put on their seeded ring — fixed anchors, not part
-// of the simulation. This is what keeps the whole thing stable:
-// with nothing pulling the skeleton around, the pieces (the only
-// nodes that actually move) settle predictably instead of the
-// whole graph drifting or spiralling out.
-var LINK_DISTANCE = 92;
-var CHARGE = 220;
-var CHARGE_MIN_DIST = 22;   // softens repulsion up close so it can't spike to infinity
-var MAX_SPEED = 14;         // clamps how far a piece can move in one tick
-var TICKS = 220;
+// How many pieces are attached to each family — used to widen that
+// family's spread as its catalog grows, so density stays roughly
+// constant instead of pieces cramming closer together every year.
+var pieceCountByFamily = {};
+pieces.forEach(function(p){
+  p.links.forEach(function(fid){
+    pieceCountByFamily[fid] = (pieceCountByFamily[fid] || 0) + 1;
+  });
+});
+var BASE_LINK_DISTANCE = 60;
+function linkDistanceFor(familyId){
+  var count = pieceCountByFamily[familyId] || 1;
+  return BASE_LINK_DISTANCE + 16 * Math.sqrt(count);
+}
 
+pieces.forEach(function(p, i){
+  var anchor = nodeById[p.links[0]];
+  var angle = (i * 2.399963) % (2 * Math.PI); // golden-angle spread, avoids clumping
+  var dist = linkDistanceFor(p.links[0]);
+  p.x = anchor.x + dist * 0.4 * Math.cos(angle);
+  p.y = anchor.y + dist * 0.4 * Math.sin(angle);
+  p.everPositioned = false;
+});
+pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r: PIECE_R}, p); });
 var pieceNodes = pieces.map(function(p){ return nodeById[p.id]; });
 
-function simulationTick(alpha){
-  // repulsion: every piece repels every other node (piece or family)
-  for (var i = 0; i < pieceNodes.length; i++){
-    var a = pieceNodes[i];
-    for (var j = 0; j < allNodes.length; j++){
-      var b = allNodes[j];
-      if (a === b) continue;
-      var dx = a.x - b.x, dy = a.y - b.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      var ux = dx / dist, uy = dy / dist;
-      var softened = Math.max(dist, CHARGE_MIN_DIST);
-      var force = (CHARGE * alpha) / (softened * softened);
-      a.vx += ux * force; a.vy += uy * force;
-    }
-  }
-  // link springs: pull each piece toward every family it's linked to
-  edges.forEach(function(e){
-    var family = nodeById[e.from], piece = nodeById[e.to];
-    var dx = family.x - piece.x, dy = family.y - piece.y;
-    var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-    var diff = (dist - LINK_DISTANCE) * alpha * 0.2;
-    var ux = dx / dist, uy = dy / dist;
-    piece.vx += ux * diff; piece.vy += uy * diff;
-  });
-  pieceNodes.forEach(function(n){
-    n.vx *= 0.75; n.vy *= 0.75;
-    var speed = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
-    if (speed > MAX_SPEED) {
-      n.vx = (n.vx / speed) * MAX_SPEED;
-      n.vy = (n.vy / speed) * MAX_SPEED;
-    }
-    n.x += n.vx; n.y += n.vy;
-  });
-}
+// ---------- live force settle for pieces ----------
+// Runs every time a family opens or closes (not continuously). Only
+// the currently visible pieces take part, repelling each other and
+// the fixed family dots, springing toward whichever family(ies)
+// they belong to. Warm-started from wherever pieces already are, so
+// the graph glides into its new shape instead of jumping.
+var CHARGE = 900;
+var CHARGE_MIN_DIST = 26;
+var MAX_SPEED = 14;
+var TICKS = 140;
 
-for (var t = 0; t < TICKS; t++){
-  simulationTick(Math.max(1 - t / TICKS, 0.02));
-}
-
-// Final cleanup pass: hard-enforce minimum spacing so nothing
-// overlaps, regardless of how the simulation settled.
-for (var pass = 0; pass < 10; pass++){
-  for (var i = 0; i < allNodes.length; i++){
-    for (var j = i + 1; j < allNodes.length; j++){
-      var a = allNodes[i], b = allNodes[j];
-      var dx = a.x - b.x, dy = a.y - b.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      var minDist = a.r + b.r + 12;
-      if (dist < minDist){
-        var overlap = (minDist - dist) / 2;
+function settlePieces(visiblePieces){
+  visiblePieces.forEach(function(n){ n.vx = 0; n.vy = 0; });
+  for (var t = 0; t < TICKS; t++){
+    var alpha = Math.max(1 - t / TICKS, 0.02);
+    // repulsion: visible pieces repel each other and every family
+    for (var i = 0; i < visiblePieces.length; i++){
+      var a = visiblePieces[i];
+      for (var j = 0; j < allRepellers.length; j++){
+        var b = allRepellers[j];
+        if (a === b) continue;
+        var dx = a.x - b.x, dy = a.y - b.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
         var ux = dx / dist, uy = dy / dist;
-        a.x += ux * overlap; a.y += uy * overlap;
-        b.x -= ux * overlap; b.y -= uy * overlap;
+        var softened = Math.max(dist, CHARGE_MIN_DIST);
+        var force = (CHARGE * alpha) / (softened * softened);
+        a.vx += ux * force; a.vy += uy * force;
       }
+    }
+    // springs: pull each visible piece toward every family it links to
+    visiblePieces.forEach(function(p){
+      p.links.forEach(function(fid){
+        var family = nodeById[fid];
+        var target = linkDistanceFor(fid);
+        var dx = family.x - p.x, dy = family.y - p.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        var diff = (dist - target) * alpha * 0.22;
+        var ux = dx / dist, uy = dy / dist;
+        p.vx += ux * diff; p.vy += uy * diff;
+      });
+    });
+    visiblePieces.forEach(function(n){
+      n.vx *= 0.72; n.vy *= 0.72;
+      var speed = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
+      if (speed > MAX_SPEED) {
+        n.vx = (n.vx / speed) * MAX_SPEED;
+        n.vy = (n.vy / speed) * MAX_SPEED;
+      }
+      n.x += n.vx; n.y += n.vy;
+    });
+  }
+  // hard collision cleanup so nothing ends up overlapping
+  for (var pass = 0; pass < 8; pass++){
+    for (var i = 0; i < visiblePieces.length; i++){
+      for (var j = i + 1; j < visiblePieces.length; j++){
+        var a = visiblePieces[i], b = visiblePieces[j];
+        var dx = a.x - b.x, dy = a.y - b.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        var minDist = a.r + b.r + 30; // extra room for the label text
+        if (dist < minDist){
+          var overlap = (minDist - dist) / 2;
+          var ux = dx / dist, uy = dy / dist;
+          a.x += ux * overlap; a.y += uy * overlap;
+          b.x -= ux * overlap; b.y -= uy * overlap;
+        }
+      }
+      families.forEach(function(f){
+        var famNode = nodeById[f.id];
+        var dx = visiblePieces[i].x - famNode.x, dy = visiblePieces[i].y - famNode.y;
+        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        var minDist = visiblePieces[i].r + famNode.r + 16;
+        if (dist < minDist){
+          var ux = dx / dist, uy = dy / dist;
+          visiblePieces[i].x = famNode.x + ux * minDist;
+          visiblePieces[i].y = famNode.y + uy * minDist;
+        }
+      });
     }
   }
 }
@@ -337,6 +355,7 @@ var NS = 'http://www.w3.org/2000/svg';
 var expanded = {};
 var openPieceId = null;
 var isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+var allRepellers = families.map(function(f){ return nodeById[f.id]; }); // reset below once pieces exist
 
 var piecePanel = document.getElementById('piece-panel');
 var graphArrows = document.getElementById('graph-arrows');
@@ -388,12 +407,10 @@ function openPanel(piece){
 }
 
 function clampX(n, v){
-  var vb = svg.viewBox.baseVal;
-  return Math.max(n.r, Math.min(vb.width - n.r, v));
+  return Math.max(n.r, Math.min(VB_W - n.r, v));
 }
 function clampY(n, v){
-  var vb = svg.viewBox.baseVal;
-  return Math.max(n.r, Math.min(vb.height - n.r, v));
+  return Math.max(n.r, Math.min(VB_H - n.r, v));
 }
 
 function drawEdges(){
@@ -411,7 +428,21 @@ function drawEdges(){
   });
 }
 
-function makeNode(n){
+var nodeElements = {}; // id -> <g> element, so we can move existing nodes instead of recreating them
+
+function positionNode(n, g, animate){
+  n.x = clampX(n, n.x);
+  n.y = clampY(n, n.y);
+  if (!animate) g.style.transition = 'none';
+  g.style.transform = 'translate(' + n.x + 'px,' + n.y + 'px)';
+  if (!animate) {
+    // force layout, then restore the transition for future moves
+    g.getBoundingClientRect();
+    g.style.transition = '';
+  }
+}
+
+function createNode(n){
   var g = document.createElementNS(NS,'g');
   var isFamily = n.type === 'family';
   g.setAttribute('class', isFamily ? 'family-node' : 'piece-node');
@@ -419,15 +450,19 @@ function makeNode(n){
 
   var circle = document.createElementNS(NS,'circle');
   circle.setAttribute('r', n.r);
-  circle.setAttribute('fill', isFamily ? n.color : '#ffffff');
-  circle.setAttribute('stroke', isFamily ? n.color : '#000000');
-  circle.setAttribute('stroke-width', isFamily ? '0' : '1');
+  if (isFamily) {
+    circle.setAttribute('fill', n.color);
+    circle.setAttribute('stroke', 'none');
+    circle.setAttribute('stroke-width', '0');
+  } else {
+    var pieceColor = n.links.length === 1 ? nodeById[n.links[0]].color : '#ffffff';
+    circle.setAttribute('fill', pieceColor);
+    circle.setAttribute('stroke', '#000000');
+    circle.setAttribute('stroke-width', '1.2');
+  }
   g.appendChild(circle);
 
   if (isFamily) {
-    // Colour dot only by default; the name appears on hover
-    // (desktop) or once the family is expanded (any device) —
-    // keeps the graph compact no matter how many families exist.
     var label = document.createElementNS(NS,'text');
     label.textContent = n.label;
     label.setAttribute('class', 'f-label');
@@ -438,28 +473,21 @@ function makeNode(n){
     label.setAttribute('fill', '#000000');
     g.appendChild(label);
   } else {
-    var displayLabel = n.label;
-    if (displayLabel.length > 14) displayLabel = displayLabel.slice(0, 13) + '…';
     var text = document.createElementNS(NS,'text');
-    text.textContent = displayLabel;
-    text.setAttribute('text-anchor','middle');
-    text.setAttribute('dy','0.35em');
-    text.setAttribute('font-family','Helvetica Neue, Helvetica, Arial, sans-serif');
+    text.textContent = n.fullLabel || n.label;
+    text.setAttribute('class', 'p-label');
+    text.setAttribute('text-anchor', 'start');
+    text.setAttribute('x', n.r + 6);
+    text.setAttribute('dy', '0.35em');
+    text.setAttribute('font-family', 'Helvetica Neue, Helvetica, Arial, sans-serif');
     text.setAttribute('font-size', '11');
     text.setAttribute('fill', '#000000');
-    var tooltip = document.createElementNS(NS,'title');
-    tooltip.textContent = n.fullLabel || n.label;
-    g.appendChild(tooltip);
     g.appendChild(text);
   }
 
   nodeLayer.appendChild(g);
   g.style.cursor = 'pointer';
-
-  n.x = clampX(n, n.x);
-  n.y = clampY(n, n.y);
-  function pos(){ g.setAttribute('transform', 'translate(' + n.x + ',' + n.y + ')'); }
-  pos();
+  nodeElements[n.id] = g;
 
   var dragging = false, offX = 0, offY = 0, moved = 0;
   function toSvgPoint(evt){
@@ -480,11 +508,10 @@ function makeNode(n){
   g.addEventListener('pointermove', function(evt){
     if (!dragging) return;
     var p = toSvgPoint(evt);
-    var newX = clampX(n, p.x + offX);
-    var newY = clampY(n, p.y + offY);
-    moved += Math.abs(newX - n.x) + Math.abs(newY - n.y);
-    n.x = newX; n.y = newY;
-    pos();
+    n.x = clampX(n, p.x + offX);
+    n.y = clampY(n, p.y + offY);
+    moved += Math.abs(n.x) + Math.abs(n.y);
+    positionNode(n, g, false);
     drawEdges();
   });
   g.addEventListener('pointerup', function(){
@@ -492,22 +519,77 @@ function makeNode(n){
     g.style.cursor = 'pointer';
     if (moved < 4) {
       if (isFamily) {
-        expanded[n.id] = !expanded[n.id];
-        render();
+        toggleFamily(n.id);
       } else {
         if (openPieceId === n.id) { closePanel(); } else { openPanel(n); }
       }
     }
   });
+
+  return g;
+}
+
+function visiblePieceList(){
+  return pieces
+    .map(function(p){ return nodeById[p.id]; })
+    .filter(function(n){ return n.links.some(function(fid){ return expanded[fid]; }); });
+}
+
+function toggleFamily(id){
+  expanded[id] = !expanded[id];
+  render();
 }
 
 function render(){
-  nodeLayer.innerHTML = '';
-  families.forEach(function(f){ makeNode(nodeById[f.id]); });
-  pieces.forEach(function(p){
-    var visible = p.links.some(function(fid){ return expanded[fid]; });
-    if (visible) makeNode(nodeById[p.id]);
+  var visible = visiblePieceList();
+
+  // newly-appearing pieces get seeded near their family before the
+  // settle pass, so they arrive from a sensible place rather than
+  // materialising mid-air
+  visible.forEach(function(n){
+    if (!n.everPositioned) {
+      var anchor = nodeById[n.links[0]];
+      var angle = Math.random() * 2 * Math.PI;
+      n.x = anchor.x + 20 * Math.cos(angle);
+      n.y = anchor.y + 20 * Math.sin(angle);
+      n.everPositioned = true;
+    }
   });
+
+  allRepellers = families.map(function(f){ return nodeById[f.id]; });
+  if (visible.length) settlePieces(visible);
+
+  var visibleIds = {};
+  families.forEach(function(f){ visibleIds[f.id] = true; });
+  visible.forEach(function(n){ visibleIds[n.id] = true; });
+
+  // remove nodes that should no longer be shown
+  Object.keys(nodeElements).forEach(function(id){
+    if (!visibleIds[id]) {
+      nodeElements[id].remove();
+      delete nodeElements[id];
+    }
+  });
+
+  // families: never re-created, just kept in sync (expanded class)
+  families.forEach(function(f){
+    var n = nodeById[f.id];
+    var g = nodeElements[f.id];
+    if (!g) { g = createNode(n); positionNode(n, g, false); }
+    g.classList.toggle('expanded', !!expanded[f.id]);
+  });
+
+  // pieces: move existing ones (animated), create new ones (not animated)
+  visible.forEach(function(n){
+    var g = nodeElements[n.id];
+    if (g) {
+      positionNode(n, g, true);
+    } else {
+      g = createNode(n);
+      positionNode(n, g, false);
+    }
+  });
+
   drawEdges();
 }
 

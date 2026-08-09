@@ -287,6 +287,12 @@ footer p {
   opacity: 1;
 }
 
+/* Pieces glide to their new spot instead of jumping, whenever a
+   family opens or closes and the layout reflows around it. */
+.piece-node {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (min-width: 900px) {
   .graph-wrap { width: max-content; }
   .map-graph svg { width: 680px; }
