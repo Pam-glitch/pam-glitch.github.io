@@ -273,6 +273,20 @@ footer p {
   user-select: none;
 }
 
+/* Family nodes: just a colour dot. The name only appears on hover
+   (desktop) or once the family is tapped open (any device), so the
+   graph stays compact as more families get added. */
+.family-node .f-label {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.family-node:hover .f-label,
+.family-node.expanded .f-label {
+  opacity: 1;
+}
+
 @media (min-width: 900px) {
   .graph-wrap { width: max-content; }
   .map-graph svg { width: 680px; }

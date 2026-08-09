@@ -5,7 +5,7 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=24">
+<link rel="stylesheet" href="style.css?v=25">
 </head>
 <body>
 <div class="wrap">
@@ -14,7 +14,7 @@
     <h1>Adam A.Ø. Pambianchi</h1>
     <p class="tagline">Composer</p>
     <nav class="nav">
-      <a href="index.html">home</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="works.html" class="active">works</a><span class="sep">|</span><a href="next.html">next</a><span class="sep">|</span><a href="contact.html">contact</a>
+      <a href="index.html">home</a><span class="sep">|</span><a href="works.html" class="active">works</a><span class="sep">|</span><a href="next.html">next</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="contact.html">contact</a>
     </nav>
   </header>
 
@@ -158,38 +158,41 @@ showListBtn.addEventListener('click', function(){
   showGraphBtn.classList.remove('active');
 });
 
+// Families: color + short label only. No fixed x/y — position is
+// decided by the force simulation below, then frozen (same idea as
+// Obsidian's graph: it settles once, then holds still).
 var families = [
-  {id:'winds', label:'winds', x:170, y:120, r:44, color:'#00c2c2'},
-  {id:'brass', label:'brass', x:500, y:100, r:44, color:'#ff9500'},
-  {id:'strings', label:'strings', x:100, y:340, r:44, color:'#3d5afe'},
-  {id:'keys', label:'keys', x:600, y:150, r:44, color:'#2ecc40'},
-  {id:'percussion', label:'percussion', x:470, y:360, r:44, color:'#ff5722'},
-  {id:'electronics', label:'electronics', x:330, y:440, r:44, color:'#9013fe'},
-  {id:'voice', label:'voice', x:330, y:40, r:44, color:'#ff1744'},
-  {id:'orchestra', label:'orchestra', x:580, y:250, r:44, color:'#2196f3'},
-  {id:'interdisciplinary', label:'interdisciplinary', x:110, y:540, r:44, color:'#4a4a4a'},
-  {id:'collabs', label:'COLLABS', x:560, y:540, r:44, color:'#ff00c8'}
+  {id:'winds', label:'winds', color:'#00c2c2'},
+  {id:'brass', label:'brass', color:'#ff9500'},
+  {id:'strings', label:'strings', color:'#3d5afe'},
+  {id:'keys', label:'keys', color:'#2ecc40'},
+  {id:'percussion', label:'percussion', color:'#ff5722'},
+  {id:'electronics', label:'electronics', color:'#9013fe'},
+  {id:'voice', label:'voice', color:'#ff1744'},
+  {id:'orchestra', label:'orchestra', color:'#2196f3'},
+  {id:'interdisciplinary', label:'interdisciplinary', color:'#4a4a4a'},
+  {id:'collabs', label:'collabs', color:'#ff00c8'}
 ];
 
 var pieces = [
-  {id:'p1', label:'Wind Quintet', links:['winds'], x:60, y:190, year:'2026', forr:'wind quintet', where:'Kammermusikkveka 2026, Norwegian Academy of Music'},
-  {id:'p2', label:'Sax solo', fullLabel:'Solo piece for Saxophone', links:['winds'], x:230, y:230, year:'2026', forr:'saxophone (Gudrun Faleide Fristad)', where:'Premiere 7 Aug; touring La Plata, Ushuaia, Cajamarca from 24 Aug'},
-  {id:'p3', label:'Erbe Selvatiche', links:['winds'], x:90, y:50, year:'2026', forr:'bass clarinet (Madara Elena Mezale)', where:'Norwegian Academy of Music, 24 March'},
-  {id:'p4', label:'Corpo', links:['winds','electronics'], x:260, y:360, year:'2025', forr:'electroacoustic, ambisonics (w/ saxophonist Gregory Karanekha)', where:'Laidi Palace, Latvia'},
-  {id:'p5', label:'Album (2026)', links:['collabs'], x:420, y:10, year:'2026', forr:'accordion (Kalle Moberg), saxophone (Mario Gabola), vocals', where:'Label: Dissipatio (IT), September 2026'},
-  {id:'p6', label:'Trombone solo', fullLabel:'Solo piece for Trombone', links:['brass'], x:600, y:30, year:'TBA', forr:'trombone (Guro Kitterød)', where:'TBA'},
-  {id:'p7', label:'Richiamo', links:['brass','percussion','electronics'], x:570, y:180, year:'2025', forr:'trombone, tam-tam, transducer (Guro Kitterød)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
-  {id:'p8', label:"We're Not Really Strangers", links:['strings','keys'], x:20, y:420, year:'2026', forr:'cello, two pianos', where:'Norwegian Academy of Music, 16 March'},
-  {id:'p9', label:'Opera', links:['percussion'], x:600, y:430, year:'2025', forr:'percussion duo (Lillekontoret)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
-  {id:'p10', label:'Tachysensia', links:['electronics'], x:420, y:520, year:'2025', forr:'speakers & phones', where:'Notam, Sonisk Hage Festival'},
-  {id:'p11', label:'In Acqua', links:['voice'], x:200, y:0, year:'2024', forr:'choir', where:'JVLMA Jauktais Koris, Riga'},
-  {id:'p12', label:'By the Grave of the Unknown Queer', links:['orchestra'], x:620, y:300, year:'2026', forr:'orchestra', where:'Trondheim Symphony Orchestra — workshops Jan & May'},
-  {id:'p13', label:'Il Mio, Il Tuo Corpo', links:['interdisciplinary'], x:20, y:590, year:'2025', forr:'interdisciplinary', where:'Aparte Festival, Vestfold Kunstsenter'},
-  {id:'p14', label:'1st Draft: First Lady', links:['interdisciplinary'], x:220, y:580, year:'2025', forr:'Duo Amoeba', where:'Blitz, Oslo'},
-  {id:'p15', label:'Habitat', links:['interdisciplinary'], x:10, y:500, year:'2025', forr:'interdisciplinary performance', where:'Norwegian Academy of Music'},
-  {id:'p16', label:'Motore', links:['interdisciplinary'], x:260, y:520, year:'2024', forr:'collaborative graduation performance, Clothing & Costume', where:'Oslo National Academy of the Arts (KHiO)'},
-  {id:'p17', label:'Short Stories', links:['interdisciplinary'], x:170, y:600, year:'2024', forr:'interdisciplinary, w/ choreographer Anna Einemo Frøysland', where:'Technical Museum, Oslo'},
-  {id:'p18', label:'Perre alla Diavola', links:['collabs'], x:640, y:600, images:[],
+  {id:'p1', label:'Wind Quintet', links:['winds'], year:'2026', forr:'wind quintet', where:'Kammermusikkveka 2026, Norwegian Academy of Music'},
+  {id:'p2', label:'Sax solo', fullLabel:'Solo piece for Saxophone', links:['winds'], year:'2026', forr:'saxophone (Gudrun Faleide Fristad)', where:'Premiere 7 Aug; touring La Plata, Ushuaia, Cajamarca from 24 Aug'},
+  {id:'p3', label:'Erbe Selvatiche', links:['winds'], year:'2026', forr:'bass clarinet (Madara Elena Mezale)', where:'Norwegian Academy of Music, 24 March'},
+  {id:'p4', label:'Corpo', links:['winds','electronics'], year:'2025', forr:'electroacoustic, ambisonics (w/ saxophonist Gregory Karanekha)', where:'Laidi Palace, Latvia'},
+  {id:'p5', label:'Album (2026)', links:['collabs'], year:'2026', forr:'accordion (Kalle Moberg), saxophone (Mario Gabola), vocals', where:'Label: Dissipatio (IT), September 2026'},
+  {id:'p6', label:'Trombone solo', fullLabel:'Solo piece for Trombone', links:['brass'], year:'TBA', forr:'trombone (Guro Kitterød)', where:'TBA'},
+  {id:'p7', label:'Richiamo', links:['brass','percussion','electronics'], year:'2025', forr:'trombone, tam-tam, transducer (Guro Kitterød)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
+  {id:'p8', label:"We're Not Really Strangers", links:['strings','keys'], year:'2026', forr:'cello, two pianos', where:'Norwegian Academy of Music, 16 March'},
+  {id:'p9', label:'Opera', links:['percussion'], year:'2025', forr:'percussion duo (Lillekontoret)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
+  {id:'p10', label:'Tachysensia', links:['electronics'], year:'2025', forr:'speakers & phones', where:'Notam, Sonisk Hage Festival'},
+  {id:'p11', label:'In Acqua', links:['voice'], year:'2024', forr:'choir', where:'JVLMA Jauktais Koris, Riga'},
+  {id:'p12', label:'By the Grave of the Unknown Queer', links:['orchestra'], year:'2026', forr:'orchestra', where:'Trondheim Symphony Orchestra — workshops Jan & May'},
+  {id:'p13', label:'Il Mio, Il Tuo Corpo', links:['interdisciplinary'], year:'2025', forr:'interdisciplinary', where:'Aparte Festival, Vestfold Kunstsenter'},
+  {id:'p14', label:'1st Draft: First Lady', links:['interdisciplinary'], year:'2025', forr:'Duo Amoeba', where:'Blitz, Oslo'},
+  {id:'p15', label:'Habitat', links:['interdisciplinary'], year:'2025', forr:'interdisciplinary performance', where:'Norwegian Academy of Music'},
+  {id:'p16', label:'Motore', links:['interdisciplinary'], year:'2024', forr:'collaborative graduation performance, Clothing & Costume', where:'Oslo National Academy of the Arts (KHiO)'},
+  {id:'p17', label:'Short Stories', links:['interdisciplinary'], year:'2024', forr:'interdisciplinary, w/ choreographer Anna Einemo Frøysland', where:'Technical Museum, Oslo'},
+  {id:'p18', label:'Perre alla Diavola', links:['collabs'], images:[],
     panelHtml:'<h3><u>Collective Perre alla Diavola</u></h3>' +
       '<p class="meta">Artists</p>' +
       '<p>' +
@@ -200,7 +203,7 @@ var pieces = [
       '</p>' +
       '<p class="meta">Photographer: Andreas Sætre</p>' +
       '<p><a href="https://perrealladiavola.com" target="_blank" rel="noopener">perrealladiavola.com</a></p>'},
-  {id:'p19', label:'FiTTyKATTA!', fullLabel:'FiTTyKATTA! Liberation is Erotic', links:['collabs'], x:500, y:470,
+  {id:'p19', label:'FiTTyKATTA!', fullLabel:'FiTTyKATTA! Liberation is Erotic', links:['collabs'],
     images:[
       {src:'images/work/fittykatta-1.jpg', alt:'Performance still from FiTTyKATTA! Liberation is Erotic'},
       {src:'images/work/fittykatta-2.jpg', alt:'Event poster for FiTTyKATTA! Liberation is Erotic, 11 April 2026 at Boksen, Hausmania'}
@@ -213,105 +216,126 @@ var pieces = [
       'Photographer: Andreas Sætre</p>'}
 ];
 
+// ---------- sizing ----------
+var VB_W = 680, VB_H = 600;
+var CENTER_X = VB_W / 2, CENTER_Y = VB_H / 2;
+var FAMILY_R = 18;   // small colour dot — label only shows on hover / when expanded
+var PIECE_R = 26;
+
+// ---------- seed positions ----------
+// Families start evenly spaced on a ring; pieces start jittered near
+// their (first) linked family. The simulation below reshuffles all
+// of this — the seed just gives it a sane, non-overlapping start.
+var FAMILY_RING = 190;
+families.forEach(function(f, i){
+  var angle = (i / families.length) * 2 * Math.PI - Math.PI / 2;
+  f.x = CENTER_X + FAMILY_RING * Math.cos(angle);
+  f.y = CENTER_Y + FAMILY_RING * Math.sin(angle);
+  f.vx = 0; f.vy = 0;
+});
+
 var nodeById = {};
-families.forEach(function(f){ nodeById[f.id] = Object.assign({type:'family'}, f); });
+families.forEach(function(f){ nodeById[f.id] = Object.assign({type:'family', r: FAMILY_R}, f); });
 
-// Every piece-to-family connection targets the same distance, so
-// spacing reads consistently across the whole graph regardless of
-// how many families a piece links to or how far apart those
-// families sit.
-var LINK_DISTANCE = 110;
-
-// Multi-family pieces: relax the position iteratively so it settles
-// where every linked family pulls it to the same LINK_DISTANCE —
-// an equal-force midpoint rather than a raw average, which breaks
-// down when the families aren't the same distance apart.
-function relaxMultiLinkPosition(links){
-  var pos = {x: 0, y: 0};
-  links.forEach(function(fid){ pos.x += nodeById[fid].x; pos.y += nodeById[fid].y; });
-  pos.x /= links.length;
-  pos.y /= links.length;
-
-  for (var iter = 0; iter < 30; iter++) {
-    var sumX = 0, sumY = 0;
-    links.forEach(function(fid){
-      var f = nodeById[fid];
-      var dx = pos.x - f.x, dy = pos.y - f.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      sumX += f.x + (dx / dist) * LINK_DISTANCE;
-      sumY += f.y + (dy / dist) * LINK_DISTANCE;
-    });
-    pos.x = sumX / links.length;
-    pos.y = sumY / links.length;
-  }
-  return pos;
-}
-
-pieces.forEach(function(p){
-  if (p.links.length > 1) {
-    var pos = relaxMultiLinkPosition(p.links);
-    p.x = pos.x;
-    p.y = pos.y;
-  }
+pieces.forEach(function(p, i){
+  var anchor = nodeById[p.links[0]];
+  var angle = (i * 2.399963) % (2 * Math.PI); // golden-angle spread, avoids clumping
+  p.x = anchor.x + 36 * Math.cos(angle);
+  p.y = anchor.y + 36 * Math.sin(angle);
+  p.vx = 0; p.vy = 0;
 });
+pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r: PIECE_R}, p); });
 
-// Single-family pieces sit at the same fixed LINK_DISTANCE from
-// their one family, spaced evenly by angle around it.
-var singleLinkGroups = {};
-pieces.forEach(function(p){
-  if (p.links.length === 1) {
-    var fid = p.links[0];
-    (singleLinkGroups[fid] = singleLinkGroups[fid] || []).push(p);
-  }
-});
-Object.keys(singleLinkGroups).forEach(function(fid){
-  var group = singleLinkGroups[fid];
-  var center = nodeById[fid];
-  var angleStep = (2 * Math.PI) / group.length;
-  group.forEach(function(p, i){
-    var angle = -Math.PI / 2 + i * angleStep;
-    p.x = center.x + LINK_DISTANCE * Math.cos(angle);
-    p.y = center.y + LINK_DISTANCE * Math.sin(angle);
-  });
-});
-
-// Nudge any piece that ended up overlapping a family it isn't
-// actually connected to — it should never sit on top of an
-// unrelated node, only near the ones it links to.
-var PIECE_RADIUS = 26;
-var COLLISION_BUFFER = 10;
-for (var pass = 0; pass < 6; pass++) {
-  var movedAny = false;
-  pieces.forEach(function(p){
-    families.forEach(function(f){
-      if (p.links.indexOf(f.id) !== -1) return;
-      var dx = p.x - f.x, dy = p.y - f.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
-      var minDist = f.r + PIECE_RADIUS + COLLISION_BUFFER;
-      if (dist < minDist) {
-        var ux = dx / dist, uy = dy / dist;
-        p.x = f.x + ux * minDist;
-        p.y = f.y + uy * minDist;
-        movedAny = true;
-      }
-    });
-  });
-  if (!movedAny) break;
-}
-
-pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r:26}, p); });
+var allNodes = families.map(function(f){ return nodeById[f.id]; })
+  .concat(pieces.map(function(p){ return nodeById[p.id]; }));
 
 var edges = [];
 pieces.forEach(function(p){ p.links.forEach(function(fid){ edges.push({from:fid, to:p.id}); }); });
 
+// ---------- force simulation (settle once, then freeze) ----------
+// Same idea as Obsidian's graph view: nodes repel each other, links
+// pull connected pairs toward a target distance, and everything is
+// nudged gently toward the centre so it doesn't drift off. Runs for
+// a fixed number of ticks while cooling down, then the result is
+// locked in — no physics keeps running after the page loads.
+// Families stay put on their seeded ring — fixed anchors, not part
+// of the simulation. This is what keeps the whole thing stable:
+// with nothing pulling the skeleton around, the pieces (the only
+// nodes that actually move) settle predictably instead of the
+// whole graph drifting or spiralling out.
+var LINK_DISTANCE = 92;
+var CHARGE = 220;
+var CHARGE_MIN_DIST = 22;   // softens repulsion up close so it can't spike to infinity
+var MAX_SPEED = 14;         // clamps how far a piece can move in one tick
+var TICKS = 220;
+
+var pieceNodes = pieces.map(function(p){ return nodeById[p.id]; });
+
+function simulationTick(alpha){
+  // repulsion: every piece repels every other node (piece or family)
+  for (var i = 0; i < pieceNodes.length; i++){
+    var a = pieceNodes[i];
+    for (var j = 0; j < allNodes.length; j++){
+      var b = allNodes[j];
+      if (a === b) continue;
+      var dx = a.x - b.x, dy = a.y - b.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+      var ux = dx / dist, uy = dy / dist;
+      var softened = Math.max(dist, CHARGE_MIN_DIST);
+      var force = (CHARGE * alpha) / (softened * softened);
+      a.vx += ux * force; a.vy += uy * force;
+    }
+  }
+  // link springs: pull each piece toward every family it's linked to
+  edges.forEach(function(e){
+    var family = nodeById[e.from], piece = nodeById[e.to];
+    var dx = family.x - piece.x, dy = family.y - piece.y;
+    var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+    var diff = (dist - LINK_DISTANCE) * alpha * 0.2;
+    var ux = dx / dist, uy = dy / dist;
+    piece.vx += ux * diff; piece.vy += uy * diff;
+  });
+  pieceNodes.forEach(function(n){
+    n.vx *= 0.75; n.vy *= 0.75;
+    var speed = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
+    if (speed > MAX_SPEED) {
+      n.vx = (n.vx / speed) * MAX_SPEED;
+      n.vy = (n.vy / speed) * MAX_SPEED;
+    }
+    n.x += n.vx; n.y += n.vy;
+  });
+}
+
+for (var t = 0; t < TICKS; t++){
+  simulationTick(Math.max(1 - t / TICKS, 0.02));
+}
+
+// Final cleanup pass: hard-enforce minimum spacing so nothing
+// overlaps, regardless of how the simulation settled.
+for (var pass = 0; pass < 10; pass++){
+  for (var i = 0; i < allNodes.length; i++){
+    for (var j = i + 1; j < allNodes.length; j++){
+      var a = allNodes[i], b = allNodes[j];
+      var dx = a.x - b.x, dy = a.y - b.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+      var minDist = a.r + b.r + 12;
+      if (dist < minDist){
+        var overlap = (minDist - dist) / 2;
+        var ux = dx / dist, uy = dy / dist;
+        a.x += ux * overlap; a.y += uy * overlap;
+        b.x -= ux * overlap; b.y -= uy * overlap;
+      }
+    }
+  }
+}
+
 var svg = document.getElementById('graph');
+svg.setAttribute('viewBox', '0 0 ' + VB_W + ' ' + VB_H);
 var edgeLayer = document.getElementById('edges');
 var nodeLayer = document.getElementById('nodes');
 var NS = 'http://www.w3.org/2000/svg';
 var expanded = {};
 var openPieceId = null;
-// Touch devices: tap only, no dragging — keeps normal finger-scroll
-// working over the graph. Desktop drag behavior is unaffected.
 var isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
 var piecePanel = document.getElementById('piece-panel');
@@ -358,8 +382,6 @@ function openPanel(piece){
     panelImages.innerHTML = '';
   }
 
-  // Scroll the panel into view automatically — don't rely on the
-  // person noticing an arrow.
   requestAnimationFrame(function(){
     piecePanel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
   });
@@ -392,29 +414,45 @@ function drawEdges(){
 function makeNode(n){
   var g = document.createElementNS(NS,'g');
   var isFamily = n.type === 'family';
+  g.setAttribute('class', isFamily ? 'family-node' : 'piece-node');
+  if (isFamily && expanded[n.id]) g.classList.add('expanded');
+
   var circle = document.createElementNS(NS,'circle');
   circle.setAttribute('r', n.r);
   circle.setAttribute('fill', isFamily ? n.color : '#ffffff');
   circle.setAttribute('stroke', isFamily ? n.color : '#000000');
   circle.setAttribute('stroke-width', isFamily ? '0' : '1');
-  var displayLabel = n.label;
-  if (!isFamily && displayLabel.length > 14) {
-    displayLabel = displayLabel.slice(0, 13) + '…';
-  }
-  var text = document.createElementNS(NS,'text');
-  text.textContent = displayLabel;
-  text.setAttribute('text-anchor','middle');
-  text.setAttribute('dy','0.35em');
-  text.setAttribute('font-family','Helvetica Neue, Helvetica, Arial, sans-serif');
-  text.setAttribute('font-size', isFamily ? '13' : '11');
-  text.setAttribute('fill', isFamily ? '#ffffff' : '#000000');
-  if (!isFamily) {
+  g.appendChild(circle);
+
+  if (isFamily) {
+    // Colour dot only by default; the name appears on hover
+    // (desktop) or once the family is expanded (any device) —
+    // keeps the graph compact no matter how many families exist.
+    var label = document.createElementNS(NS,'text');
+    label.textContent = n.label;
+    label.setAttribute('class', 'f-label');
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('y', -(n.r + 8));
+    label.setAttribute('font-family', 'Courier New, Courier, monospace');
+    label.setAttribute('font-size', '12');
+    label.setAttribute('fill', '#000000');
+    g.appendChild(label);
+  } else {
+    var displayLabel = n.label;
+    if (displayLabel.length > 14) displayLabel = displayLabel.slice(0, 13) + '…';
+    var text = document.createElementNS(NS,'text');
+    text.textContent = displayLabel;
+    text.setAttribute('text-anchor','middle');
+    text.setAttribute('dy','0.35em');
+    text.setAttribute('font-family','Helvetica Neue, Helvetica, Arial, sans-serif');
+    text.setAttribute('font-size', '11');
+    text.setAttribute('fill', '#000000');
     var tooltip = document.createElementNS(NS,'title');
     tooltip.textContent = n.fullLabel || n.label;
     g.appendChild(tooltip);
+    g.appendChild(text);
   }
-  g.appendChild(circle);
-  g.appendChild(text);
+
   nodeLayer.appendChild(g);
   g.style.cursor = 'pointer';
 
