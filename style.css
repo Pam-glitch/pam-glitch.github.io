@@ -52,6 +52,19 @@ h1, h2 {
   margin: 0 auto;
 }
 
+/* works.html only — more horizontal room for the family tree and
+   the piece panel beside it. Every other page keeps the narrow
+   680px column above. */
+.wrap.wide {
+  max-width: var(--width);
+}
+
+@media (min-width: 900px) {
+  .wrap.wide {
+    max-width: 1040px;
+  }
+}
+
 header.site-header {
   margin-bottom: 32px;
 }
@@ -253,102 +266,96 @@ footer p {
   margin: 24px 0;
 }
 
-/* Tree container: sized by JS to fit whatever's left of the
-   viewport, so the whole thing is visible without scrolling on
-   phone or desktop. No border — the tree itself is the content. */
-.tree-wrap {
+.graph-wrap {
   width: 100%;
-  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-#tree {
+/* No box, no outline — the graph sits right on the page background. */
+.map-graph svg,
+#tree-wrap svg {
   width: 100%;
-  height: 100%;
-  display: block;
+  height: auto;
+  border: none;
   touch-action: pan-y;
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
 }
 
-.family-row circle {
-  transition: r 0.15s ease;
+/* Family rows: just a colour dot. The name only appears on hover
+   (desktop) or once the family is tapped open (any device), so the
+   graph stays compact as more families get added. */
+.family-row .f-label,
+.family-node .f-label {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
-.family-row:hover circle {
-  r: 24;
+.family-row:hover .f-label,
+.family-row.expanded .f-label,
+.family-node:hover .f-label,
+.family-node.expanded .f-label {
+  opacity: 1;
 }
 
-.f-label {
-  font-family: "Courier New", Courier, monospace;
-  font-size: 13px;
-  fill: var(--ink);
-  text-transform: lowercase;
-  letter-spacing: 0.3px;
-}
-
-.family-row.secondary .f-label {
-  font-weight: bold;
-}
-
-.connector {
-  fill: none;
-  stroke-width: 1.2;
-  opacity: 0.55;
-}
-
+.piece-node text,
+.family-row circle,
 .piece-node circle {
-  fill: #ffffff;
-  stroke: #000000;
-  stroke-width: 1.3;
+  transition: none;
 }
 
-.piece-node:hover circle {
-  fill: var(--red);
-  fill-opacity: 0.12;
+/* Neon fuchsia arrows, shown under the graph when a piece is open */
+.graph-arrows {
+  color: #ff00ff;
 }
 
-.p-label {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 12.5px;
-  fill: var(--ink);
-}
-
-/* Detail panel: overlay, so opening a piece never changes the
-   tree's height or triggers page scrolling. */
-.panel-overlay {
+.graph-arrows {
   display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.88);
-  z-index: 40;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  width: 100%;
+  justify-content: space-between;
+  padding: 4px 14px 0;
   box-sizing: border-box;
+  font-size: 34px;
+  line-height: 1;
 }
 
-.panel-overlay.open {
+.graph-arrows.open {
   display: flex;
 }
 
+@media (min-width: 900px) {
+  .graph-arrows { width: 680px; }
+}
+
+/* Piece panel: full-width and stacked (text, then image) on phones —
+   a fixed 680×680 square, side by side, on wider screens */
 .piece-panel {
+  display: none;
   width: 100%;
-  max-width: 640px;
-  max-height: 86vh;
-  overflow-y: auto;
-  background: var(--bg);
-  border: 1px solid var(--ink);
+  max-width: 1040px;
+  margin-top: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
-  padding: 24px;
+  padding: 20px;
   position: relative;
+  gap: 20px;
+}
+
+.piece-panel.open {
   display: flex;
   flex-direction: column;
-  gap: 16px;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 900px) {
   .piece-panel {
+    height: 680px;
+  }
+  .piece-panel.open {
     flex-direction: row;
     gap: 24px;
   }
@@ -360,11 +367,11 @@ footer p {
   right: 14px;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
   color: var(--ink);
   line-height: 1;
-  padding: 4px;
+  padding: 0;
 }
 
 .panel-images-col {
@@ -383,14 +390,16 @@ footer p {
   font-size: 15px;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 900px) {
   .panel-images-col {
     flex: none;
     width: 200px;
+    overflow-y: auto;
   }
   .panel-text-col {
     flex: 1;
     min-width: 0;
+    overflow-y: auto;
   }
 }
 

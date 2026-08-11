@@ -5,10 +5,10 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=27">
+<link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
-<div class="wrap">
+<div class="wrap wide">
 
   <header class="site-header">
     <h1>Adam A.Ø. Pambianchi</h1>
@@ -32,9 +32,7 @@
           <g id="tree-content"></g>
         </svg>
       </div>
-    </div>
 
-    <div class="panel-overlay" id="panel-overlay">
       <div class="piece-panel" id="piece-panel">
         <button type="button" id="panel-close" class="panel-close" aria-label="Close">&times;</button>
         <div id="panel-content" class="panel-text-col"></div>
@@ -226,23 +224,22 @@ var treeWrap = document.getElementById('tree-wrap');
 var NS = 'http://www.w3.org/2000/svg';
 
 var piecePanel = document.getElementById('piece-panel');
-var panelOverlay = document.getElementById('panel-overlay');
 var panelImages = document.getElementById('panel-images');
 var panelContent = document.getElementById('panel-content');
 var panelClose = document.getElementById('panel-close');
 
 function closePanel(){
   openPieceId = null;
-  panelOverlay.classList.remove('open');
+  piecePanel.classList.remove('open');
   panelImages.innerHTML = '';
   panelContent.innerHTML = '';
+  render();
 }
 panelClose.addEventListener('click', closePanel);
-panelOverlay.addEventListener('click', function(evt){ if (evt.target === panelOverlay) closePanel(); });
 
 function openPanel(piece){
   openPieceId = piece.id;
-  panelOverlay.classList.add('open');
+  piecePanel.classList.add('open');
 
   var textHtml = '';
   if (piece.panelHtml) {
@@ -264,6 +261,11 @@ function openPanel(piece){
   } else {
     panelImages.innerHTML = '';
   }
+
+  render();
+  requestAnimationFrame(function(){
+    piecePanel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  });
 }
 
 function toggleFamily(id){
@@ -290,8 +292,12 @@ function fitHeight(){
 function render(){
   var layout = computeLayout();
   treeContent.innerHTML = '';
-  svg.setAttribute('viewBox', '0 0 400 ' + layout.totalHeight);
+  svg.setAttribute('viewBox', '0 0 640 ' + layout.totalHeight);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+  var familyRowById = {};
+  layout.rows.forEach(function(row){ familyRowById[row.family.id] = row; });
+  var secondaryLinkPaths = []; // drawn after all rows exist, so every family's position is known
 
   layout.rows.forEach(function(row){
     var f = row.family;
@@ -350,21 +356,33 @@ function render(){
       pl.setAttribute('fill', '#000000');
       pg.appendChild(pl);
 
-      // small colored badge per additional linked family — no line,
-      // just a dot naming the connection, so it scales however many
-      // families a piece links to without more crossing lines
+      // a piece that belongs to more than one family gets a dashed
+      // neon-blue line to each additional family instead of a badge —
+      // queued here, drawn last, once every family's row position
+      // (open or closed) is known
       var otherLinks = p.links.filter(function(fid){ return fid !== p.homeFamily; });
-      otherLinks.forEach(function(fid, i){
-        var badge = document.createElementNS(NS, 'circle');
-        badge.setAttribute('cx', p.treeX - PIECE_R - 3 - i * 9);
-        badge.setAttribute('cy', p.treeY - PIECE_R - 2);
-        badge.setAttribute('r', 4);
-        badge.setAttribute('fill', nodeById[fid].color);
-        var title = document.createElementNS(NS, 'title');
-        title.textContent = 'also linked: ' + nodeById[fid].label;
-        badge.appendChild(title);
-        pg.appendChild(badge);
+      otherLinks.forEach(function(fid){
+        var targetRow = familyRowById[fid];
+        if (!targetRow) return;
+        secondaryLinkPaths.push({ familyY: targetRow.centerY, pieceY: p.treeY });
       });
+
+      // the open piece gets a thin black box around its dot + title,
+      // the same treatment the active nav link gets — text and dot
+      // stay exactly the size they already were
+      if (p.id === openPieceId) {
+        var bbox = pg.getBBox();
+        var padX = 8, padY = 6;
+        var box = document.createElementNS(NS, 'rect');
+        box.setAttribute('x', bbox.x - padX);
+        box.setAttribute('y', bbox.y - padY);
+        box.setAttribute('width', bbox.width + padX * 2);
+        box.setAttribute('height', bbox.height + padY * 2);
+        box.setAttribute('fill', 'none');
+        box.setAttribute('stroke', '#000000');
+        box.setAttribute('stroke-width', '1');
+        pg.insertBefore(box, pg.firstChild);
+      }
 
       pg.addEventListener('click', function(evt){
         evt.stopPropagation();
@@ -372,6 +390,19 @@ function render(){
       });
       treeContent.appendChild(pg);
     });
+  });
+
+  secondaryLinkPaths.forEach(function(link){
+    var path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', connectorPath(link.familyY, link.pieceY));
+    path.setAttribute('class', 'secondary-link');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', '#00c8ff');
+    path.setAttribute('stroke-width', '1.2');
+    path.setAttribute('stroke-dasharray', '2,4');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('opacity', '0.75');
+    treeContent.insertBefore(path, treeContent.firstChild);
   });
 
   fitHeight();
