@@ -5,7 +5,7 @@
 <meta name="description" content="Catalog of works by Adam A.Ø. Pambianchi, composer, grouped by instrument family.">
 <title>Works — Adam A.Ø. Pambianchi</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css?v=26">
+<link rel="stylesheet" href="style.css?v=27">
 </head>
 <body>
 <div class="wrap">
@@ -28,7 +28,7 @@
 
     <div class="map-graph" id="map-graph-view">
       <div class="tree-wrap" id="tree-wrap">
-        <svg id="tree" role="img" aria-label="Family tree of works, click a family to expand it">
+        <svg id="tree" width="100%" height="100%" role="img" aria-label="Family tree of works, click a family to expand it">
           <g id="tree-content"></g>
         </svg>
       </div>
@@ -310,6 +310,9 @@ function render(){
     label.setAttribute('x', SPINE_X + FAMILY_R + 10);
     label.setAttribute('y', row.centerY);
     label.setAttribute('dominant-baseline', 'central');
+    label.setAttribute('font-family', 'Courier New, Courier, monospace');
+    label.setAttribute('font-size', '13');
+    label.setAttribute('fill', '#000000');
     g.appendChild(label);
 
     g.addEventListener('click', function(){ toggleFamily(f.id); });
@@ -319,7 +322,10 @@ function render(){
       var path = document.createElementNS(NS, 'path');
       path.setAttribute('d', connectorPath(row.centerY, p.treeY));
       path.setAttribute('class', 'connector');
+      path.setAttribute('fill', 'none');
       path.setAttribute('stroke', f.color);
+      path.setAttribute('stroke-width', '1.2');
+      path.setAttribute('opacity', '0.55');
       treeContent.appendChild(path);
 
       var pg = document.createElementNS(NS, 'g');
@@ -328,6 +334,9 @@ function render(){
 
       var pc = document.createElementNS(NS, 'circle');
       pc.setAttribute('cx', p.treeX); pc.setAttribute('cy', p.treeY); pc.setAttribute('r', PIECE_R);
+      pc.setAttribute('fill', '#ffffff');
+      pc.setAttribute('stroke', '#000000');
+      pc.setAttribute('stroke-width', '1.3');
       pg.appendChild(pc);
 
       var pl = document.createElementNS(NS, 'text');
@@ -336,6 +345,9 @@ function render(){
       pl.setAttribute('x', p.treeX + PIECE_R + 8);
       pl.setAttribute('y', p.treeY);
       pl.setAttribute('dominant-baseline', 'central');
+      pl.setAttribute('font-family', 'Helvetica Neue, Helvetica, Arial, sans-serif');
+      pl.setAttribute('font-size', '12.5');
+      pl.setAttribute('fill', '#000000');
       pg.appendChild(pl);
 
       // small colored badge per additional linked family — no line,
@@ -367,6 +379,7 @@ function render(){
 
 window.addEventListener('resize', fitHeight);
 render();
+requestAnimationFrame(fitHeight);
 
 // ---------- plain-list view: generated from the same data as the ----------
 // graph above, so a new piece only ever needs adding in one place.
