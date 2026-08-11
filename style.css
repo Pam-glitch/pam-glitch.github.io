@@ -284,16 +284,19 @@ footer p {
   align-items: flex-start;
 }
 
-/* No box, no outline — the graph sits right on the page background. */
+/* No box, no outline — the graph sits right on the page background.
+   Height is set explicitly in JS (matching real content px) rather
+   than left to auto-scale, and transitions smoothly on toggle. */
 .map-graph svg,
 #tree-wrap svg {
+  display: block;
   width: 100%;
-  height: auto;
   border: none;
   touch-action: pan-y;
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;
+  transition: height 0.35s ease;
 }
 
 /* Family rows: just a colour dot. The name only appears on hover

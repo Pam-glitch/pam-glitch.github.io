@@ -144,31 +144,40 @@ pieces.forEach(function(p){ nodeById[p.id] = p; });
 // it's built in by construction. Opening or closing a family only
 // ever changes that family's own row height; every other row is
 // completely unaffected, so nothing else on the page ever moves.
-var SPINE_X = 110;
-var FAMILY_R = 12;
-var PIECE_R = 9;
-var CLOSED_ROW_H = 48;
+var SPINE_X = 26;
+var FAMILY_R = 9;
+var PIECE_R = 6;
+var CLOSED_ROW_H = 40;
 var PIECE_ROW_H = 34;
-var ROW_PAD = 16;
-var PIECE_X = 260;
-var CORNER_R = 7;
-var TOP_PAD = 18;
-var BOTTOM_PAD = 18;
+var ROW_PAD = 14;
+var PIECE_X = 100;
+var STAGGER_X = 12; // per chronology rank: older pieces sit left, newer sit right
+var CORNER_R = 6;
+var TOP_PAD = 16;
+var BOTTOM_PAD = 16;
+var PIECE_FONT_SIZE = 17; // matches the intro paragraph's body copy
 
 var MAX_OPEN_FAMILIES = 3;
 var expanded = {};
 var openOrder = [];
 var openPieceId = null;
 
+function yearValue(y){
+  var n = parseInt(y, 10);
+  return isNaN(n) ? Infinity : n; // TBA / unknown sinks to the newest end
+}
+
 function piecesFor(familyId){
   // A piece belongs to the first family in ITS OWN link order that's
   // currently open — stable regardless of click order, and each
-  // piece only ever occupies one row, never duplicated.
+  // piece only ever occupies one row, never duplicated. Sorted oldest
+  // first, so chronology reads top-to-bottom (and, via the x stagger
+  // below, left-to-right) within the row.
   return pieces.filter(function(p){
     return p.links[0] === familyId ? expanded[familyId] :
       p.links.indexOf(familyId) !== -1 && expanded[familyId] &&
       p.links.filter(function(fid){ return expanded[fid]; })[0] === familyId;
-  });
+  }).sort(function(a, b){ return yearValue(a.year) - yearValue(b.year); });
 }
 
 function computeLayout(){
@@ -196,7 +205,7 @@ function computeLayout(){
         ? row.centerY
         : innerTop + (innerH / row.kids.length) * (i + 0.5);
       p.treeY = slotCenter;
-      p.treeX = PIECE_X;
+      p.treeX = PIECE_X + i * STAGGER_X; // oldest (i=0) leftmost, newest furthest right
       p.homeFamily = row.family.id;
     });
   });
@@ -204,11 +213,11 @@ function computeLayout(){
   return { rows: rows, totalHeight: y + BOTTOM_PAD };
 }
 
-function connectorPath(familyY, pieceY){
-  var x1 = SPINE_X + FAMILY_R, x2 = PIECE_X - PIECE_R;
+function connectorPath(familyY, pieceY, pieceX){
+  var x1 = SPINE_X + FAMILY_R, x2 = pieceX - PIECE_R;
   if (Math.abs(pieceY - familyY) < 0.5) return 'M' + x1 + ',' + familyY + ' L' + x2 + ',' + pieceY;
   var dir = pieceY > familyY ? 1 : -1;
-  var midX = x1 + 26;
+  var midX = x1 + 22;
   var r = CORNER_R;
   return 'M' + x1 + ',' + familyY +
     ' L' + (midX - r) + ',' + familyY +
@@ -220,7 +229,16 @@ function connectorPath(familyY, pieceY){
 
 var svg = document.getElementById('tree');
 var treeContent = document.getElementById('tree-content');
+var treeWrapEl = document.getElementById('tree-wrap');
 var NS = 'http://www.w3.org/2000/svg';
+
+// The viewBox width is set to the wrapper's actual rendered pixel
+// width, so 1 svg unit always equals 1 real px — dots, fonts and
+// spacing stay the exact size specified above no matter how wide
+// the page is, instead of being stretched to fill it.
+function contentWidth(){
+  return treeWrapEl.clientWidth || 640;
+}
 
 var piecePanel = document.getElementById('piece-panel');
 var panelImages = document.getElementById('panel-images');
@@ -285,8 +303,10 @@ function toggleFamily(id){
 function render(){
   var layout = computeLayout();
   treeContent.innerHTML = '';
-  svg.setAttribute('viewBox', '0 0 640 ' + layout.totalHeight);
+  var vbw = contentWidth();
+  svg.setAttribute('viewBox', '0 0 ' + vbw + ' ' + layout.totalHeight);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.style.height = layout.totalHeight + 'px';
 
   var familyRowById = {};
   layout.rows.forEach(function(row){ familyRowById[row.family.id] = row; });
@@ -306,9 +326,9 @@ function render(){
     var label = document.createElementNS(NS, 'text');
     label.textContent = f.label;
     label.setAttribute('class', 'f-label');
-    label.setAttribute('x', SPINE_X);
-    label.setAttribute('y', row.centerY - FAMILY_R - 8);
-    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('x', SPINE_X - FAMILY_R);
+    label.setAttribute('y', row.centerY - FAMILY_R - 7);
+    label.setAttribute('text-anchor', 'start');
     label.setAttribute('font-family', 'Courier New, Courier, monospace');
     label.setAttribute('font-size', '13');
     label.setAttribute('fill', '#000000');
@@ -319,12 +339,12 @@ function render(){
 
     row.kids.forEach(function(p){
       var path = document.createElementNS(NS, 'path');
-      path.setAttribute('d', connectorPath(row.centerY, p.treeY));
+      path.setAttribute('d', connectorPath(row.centerY, p.treeY, p.treeX));
       path.setAttribute('class', 'connector');
       path.setAttribute('fill', 'none');
       path.setAttribute('stroke', f.color);
-      path.setAttribute('stroke-width', '1.2');
-      path.setAttribute('opacity', '0.55');
+      path.setAttribute('stroke-width', '1.8');
+      path.setAttribute('opacity', '0.85');
       treeContent.appendChild(path);
 
       var pg = document.createElementNS(NS, 'g');
@@ -335,17 +355,17 @@ function render(){
       pc.setAttribute('cx', p.treeX); pc.setAttribute('cy', p.treeY); pc.setAttribute('r', PIECE_R);
       pc.setAttribute('fill', '#ffffff');
       pc.setAttribute('stroke', '#000000');
-      pc.setAttribute('stroke-width', '1.3');
+      pc.setAttribute('stroke-width', '1.1');
       pg.appendChild(pc);
 
       var pl = document.createElementNS(NS, 'text');
       pl.textContent = p.fullLabel || p.label;
       pl.setAttribute('class', 'p-label');
-      pl.setAttribute('x', p.treeX + PIECE_R + 8);
+      pl.setAttribute('x', p.treeX + PIECE_R + 10);
       pl.setAttribute('y', p.treeY);
       pl.setAttribute('dominant-baseline', 'central');
       pl.setAttribute('font-family', 'Helvetica Neue, Helvetica, Arial, sans-serif');
-      pl.setAttribute('font-size', '12.5');
+      pl.setAttribute('font-size', PIECE_FONT_SIZE);
       pl.setAttribute('fill', '#000000');
       pg.appendChild(pl);
 
@@ -357,7 +377,7 @@ function render(){
       otherLinks.forEach(function(fid){
         var targetRow = familyRowById[fid];
         if (!targetRow) return;
-        secondaryLinkPaths.push({ familyY: targetRow.centerY, pieceY: p.treeY });
+        secondaryLinkPaths.push({ familyY: targetRow.centerY, pieceY: p.treeY, pieceX: p.treeX });
       });
 
       // the open piece gets a thin black box around its dot + title,
@@ -365,7 +385,7 @@ function render(){
       // stay exactly the size they already were
       if (p.id === openPieceId) {
         var bbox = pg.getBBox();
-        var padX = 8, padY = 6;
+        var padX = 6, padY = 4;
         var box = document.createElementNS(NS, 'rect');
         box.setAttribute('x', bbox.x - padX);
         box.setAttribute('y', bbox.y - padY);
@@ -387,19 +407,24 @@ function render(){
 
   secondaryLinkPaths.forEach(function(link){
     var path = document.createElementNS(NS, 'path');
-    path.setAttribute('d', connectorPath(link.familyY, link.pieceY));
+    path.setAttribute('d', connectorPath(link.familyY, link.pieceY, link.pieceX));
     path.setAttribute('class', 'secondary-link');
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke', '#00c8ff');
-    path.setAttribute('stroke-width', '1.2');
-    path.setAttribute('stroke-dasharray', '2,4');
+    path.setAttribute('stroke-width', '1.6');
+    path.setAttribute('stroke-dasharray', '3,6');
     path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('opacity', '0.75');
+    path.setAttribute('opacity', '0.9');
     treeContent.insertBefore(path, treeContent.firstChild);
   });
 }
 
 render();
+var resizeTimer;
+window.addEventListener('resize', function(){
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(render, 120);
+});
 
 // ---------- plain-list view: generated from the same data as the ----------
 // graph above, so a new piece only ever needs adding in one place.
