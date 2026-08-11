@@ -52,21 +52,31 @@ h1, h2 {
   margin: 0 auto;
 }
 
-/* works.html only — more horizontal room for the family tree and
-   the piece panel beside it. Every other page keeps the narrow
-   680px column above. */
-.wrap.wide {
-  max-width: var(--width);
+/* Escapes the 680px .wrap to use more horizontal room, while staying
+   centered on the page — used only around the works.html graph and
+   piece panel. Header, footer, and everything else stay in the
+   normal narrow column above, same as every other page. */
+.breakout {
+  width: 100%;
 }
 
 @media (min-width: 900px) {
-  .wrap.wide {
+  .breakout {
+    width: 100vw;
     max-width: 1040px;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
   }
 }
 
 header.site-header {
   margin-bottom: 32px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  padding-top: 8px;
 }
 
 h1 {
