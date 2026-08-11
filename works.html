@@ -138,21 +138,18 @@ var pieces = [
 ];
 
 // ---------- sizing ----------
-// VB_W/VB_H are the default canvas size — what's shown when little
-// or nothing is open. The canvas itself grows to fit whatever's
-// actually visible (see fitViewBox below), the same way a canvas
-// app doesn't crop content that doesn't fit; SAFE_MARGIN is only a
-// generous backstop against genuine runaway, not a real boundary.
+// Fixed canvas, always. No growing, no shrinking, no dynamic
+// resizing based on what's open — that dynamic-sizing behavior is
+// what made things feel like they were sprawling and jumping
+// around. The tradeoff: in a rare dense case a label might sit
+// close to another rather than the whole canvas stretching to avoid
+// it. That's an intentional choice, not an oversight.
 var VB_W = 680, VB_H = 600;
 var CENTER_X = VB_W / 2, CENTER_Y = VB_H / 2;
-var SAFE_MARGIN = 3000;
 var FAMILY_R = 18;
 var PIECE_R = 5; // small dot; the label sits beside it, not inside it
 
-// ---------- family positions: a home ring position, but families ----------
-// can now drift a little from it when several crowded families are
-// open together — see repositionOpenFamilies below. A closed family
-// always snaps back to its home spot.
+// ---------- family positions: fixed home ring, orchestral order ----------
 var FAMILY_RING = 190;
 families.forEach(function(f, i){
   var angle = (i / families.length) * 2 * Math.PI - Math.PI / 2;
@@ -167,9 +164,9 @@ families.forEach(function(f){ nodeById[f.id] = Object.assign({type:'family', r: 
 var edges = [];
 pieces.forEach(function(p){ p.links.forEach(function(fid){ edges.push({from:fid, to:p.id}); }); });
 
-// How many pieces are attached to each family — used to widen that
-// family's spread as its catalog grows, so density stays roughly
-// constant instead of pieces cramming closer together every year.
+// How many pieces are attached to each family — a family with more
+// pieces gets a modestly wider ring, so density stays roughly even
+// as the catalog grows, without the ring ballooning outward.
 var pieceCountByFamily = {};
 pieces.forEach(function(p){
   p.links.forEach(function(fid){
@@ -177,241 +174,19 @@ pieces.forEach(function(p){
   });
 });
 var BASE_LINK_DISTANCE = 60;
+var LINK_GROWTH = 14;
 function linkDistanceFor(familyId){
   var count = pieceCountByFamily[familyId] || 1;
-  return BASE_LINK_DISTANCE + 16 * Math.sqrt(count);
+  return BASE_LINK_DISTANCE + LINK_GROWTH * Math.sqrt(count);
 }
 
-pieces.forEach(function(p, i){
-  var anchor = nodeById[p.links[0]];
-  var angle = (i * 2.399963) % (2 * Math.PI); // golden-angle spread, avoids clumping
-  var dist = linkDistanceFor(p.links[0]);
-  p.x = anchor.x + dist * 0.4 * Math.cos(angle);
-  p.y = anchor.y + dist * 0.4 * Math.sin(angle);
-  p.everPositioned = false;
-});
-pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r: PIECE_R}, p); });
-var pieceNodes = pieces.map(function(p){ return nodeById[p.id]; });
+pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r: PIECE_R, x: 0, y: 0}, p); });
 
-// ---------- live force settle for pieces ----------
-// Runs every time a family opens or closes (not continuously). Only
-// the currently visible pieces take part, repelling each other and
-// the fixed family dots, springing toward whichever family(ies)
-// they belong to. Warm-started from wherever pieces already are, so
-// the graph glides into its new shape instead of jumping.
-var CHARGE = 900;
-var CHARGE_MIN_DIST = 26;
-var MAX_SPEED = 14;
-var TICKS = 140;
-
-function settlePieces(visiblePieces){
-  visiblePieces.forEach(function(n){ n.vx = 0; n.vy = 0; });
-  for (var t = 0; t < TICKS; t++){
-    var alpha = Math.max(1 - t / TICKS, 0.02);
-    // repulsion: visible pieces repel each other and every family
-    for (var i = 0; i < visiblePieces.length; i++){
-      var a = visiblePieces[i];
-      for (var j = 0; j < allRepellers.length; j++){
-        var b = allRepellers[j];
-        if (a === b) continue;
-        var dx = a.x - b.x, dy = a.y - b.y;
-        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        var ux = dx / dist, uy = dy / dist;
-        var softened = Math.max(dist, CHARGE_MIN_DIST);
-        var force = (CHARGE * alpha) / (softened * softened);
-        a.vx += ux * force; a.vy += uy * force;
-      }
-    }
-    // springs: pull each visible piece toward every family it links to
-    visiblePieces.forEach(function(p){
-      p.links.forEach(function(fid){
-        var family = nodeById[fid];
-        var target = linkDistanceFor(fid);
-        var dx = family.x - p.x, dy = family.y - p.y;
-        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        var diff = (dist - target) * alpha * 0.22;
-        var ux = dx / dist, uy = dy / dist;
-        p.vx += ux * diff; p.vy += uy * diff;
-      });
-    });
-    visiblePieces.forEach(function(n){
-      n.vx *= 0.72; n.vy *= 0.72;
-      var speed = Math.sqrt(n.vx * n.vx + n.vy * n.vy);
-      if (speed > MAX_SPEED) {
-        n.vx = (n.vx / speed) * MAX_SPEED;
-        n.vy = (n.vy / speed) * MAX_SPEED;
-      }
-      n.x += n.vx; n.y += n.vy;
-    });
-  }
-  // hard collision cleanup so dots never overlap
-  for (var pass = 0; pass < 8; pass++){
-    for (var i = 0; i < visiblePieces.length; i++){
-      for (var j = i + 1; j < visiblePieces.length; j++){
-        var a = visiblePieces[i], b = visiblePieces[j];
-        var dx = a.x - b.x, dy = a.y - b.y;
-        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        var minDist = a.r + b.r + 30; // extra room for the label text
-        if (dist < minDist){
-          var overlap = (minDist - dist) / 2;
-          var ux = dx / dist, uy = dy / dist;
-          a.x += ux * overlap; a.y += uy * overlap;
-          b.x -= ux * overlap; b.y -= uy * overlap;
-        }
-      }
-      families.forEach(function(f){
-        var famNode = nodeById[f.id];
-        var dx = visiblePieces[i].x - famNode.x, dy = visiblePieces[i].y - famNode.y;
-        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        var minDist = visiblePieces[i].r + famNode.r + 16;
-        if (dist < minDist){
-          var ux = dx / dist, uy = dy / dist;
-          visiblePieces[i].x = famNode.x + ux * minDist;
-          visiblePieces[i].y = famNode.y + uy * minDist;
-        }
-      });
-    }
-  }
-  // Post-physics: converge every layout constraint together in a
-  // loop, instead of a fixed one-shot sequence. A fixed sequence is
-  // how a piece ends up sitting on top of an unrelated family — each
-  // fix below only checks its own concern, so running them once in
-  // order lets a later fix quietly re-break an earlier one. Looping
-  // them together and re-checking each time is what actually
-  // converges on a state where nothing overlaps.
-  for (var round = 0; round < 20; round++){
-    resolveLabelOverlaps(visiblePieces);
-    var a1 = avoidFamilyDots(visiblePieces);
-    var a2 = enforceFamilyLeash(visiblePieces);
-    var a3 = spreadFamilyAngles(visiblePieces);
-    if (!a1 && !a2 && !a3) break;
-  }
-  resolveLabelOverlaps(visiblePieces); // text separation gets the final word
-  for (var finalRound = 0; finalRound < 4; finalRound++){
-    var f1 = avoidFamilyDots(visiblePieces);
-    var f2 = enforceFamilyLeash(visiblePieces);
-    if (!f1 && !f2) break;
-  }
-  lightCollisionCleanup(visiblePieces);
-}
-
-// A piece's dot must never land on ANY family's circle — not just
-// the families it's linked to. Nothing else in this file checks
-// that after the very first placement, which is how a piece could
-// end up sitting on top of a family it has nothing to do with.
-function avoidFamilyDots(visiblePieces){
-  var moved = false;
-  visiblePieces.forEach(function(n){
-    families.forEach(function(f){
-      var famNode = nodeById[f.id];
-      var dx = n.x - famNode.x, dy = n.y - famNode.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      var minDist = n.r + famNode.r + 16;
-      if (dist < minDist){
-        var ux = dx / dist, uy = dy / dist;
-        n.x = famNode.x + ux * minDist;
-        n.y = famNode.y + uy * minDist;
-        moved = true;
-      }
-    });
-  });
-  return moved;
-}
-
-function lightCollisionCleanup(visiblePieces){
-  for (var pass = 0; pass < 6; pass++){
-    for (var i = 0; i < visiblePieces.length; i++){
-      for (var j = i + 1; j < visiblePieces.length; j++){
-        var a = visiblePieces[i], b = visiblePieces[j];
-        var dx = a.x - b.x, dy = a.y - b.y;
-        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        var minDist = a.r + b.r + 30;
-        if (dist < minDist){
-          var overlap = (minDist - dist) / 2;
-          var ux = dx / dist, uy = dy / dist;
-          a.x += ux * overlap; a.y += uy * overlap;
-          b.x -= ux * overlap; b.y -= uy * overlap;
-        }
-      }
-    }
-  }
-  visiblePieces.forEach(function(n){ pieceLabelBox(n); });
-}
-
-// Fixing label overlap (above) only ever moves pieces vertically —
-// nothing there ever spreads them around their family horizontally.
-// Left alone, several pieces from the same family can end up nearly
-// stacked in a column below it, so their connecting lines fan out
-// at almost the same angle and overlap each other for most of their
-// length. This spreads siblings apart in angle-from-family, holding
-// each piece's y fixed (the thing that guarantees no label overlap)
-// and solving only for the x that gives it a wider angle.
-var MIN_FAMILY_ANGLE = 9 * Math.PI / 180;
-function spreadFamilyAngles(visiblePieces){
-  var moved = false;
-  families.forEach(function(f){
-    var fx = f.x, fy = f.y;
-    var children = visiblePieces.filter(function(p){ return p.links.indexOf(f.id) !== -1; });
-    if (children.length < 2) return;
-    var entries = children.map(function(p){
-      return { p: p, angle: Math.atan2(p.y - fy, p.x - fx), dy: p.y - fy };
-    });
-    entries.sort(function(a, b){ return a.angle - b.angle; });
-    for (var i = 1; i < entries.length; i++){
-      var prev = entries[i - 1], cur = entries[i];
-      if (cur.angle - prev.angle >= MIN_FAMILY_ANGLE) continue;
-      var newAngle = prev.angle + MIN_FAMILY_ANGLE;
-      // Solve for x that gives this angle at the SAME y (dy fixed) —
-      // that's what keeps the label-stacking result intact.
-      if (Math.abs(Math.sin(newAngle)) < 0.05) continue; // near-horizontal: skip, too unstable to solve for
-      var r = cur.dy / Math.sin(newAngle);
-      if (!isFinite(r) || Math.abs(r) > linkDistanceFor(f.id) * 4) continue; // guard against blow-up
-      cur.p.x = fx + r * Math.cos(newAngle);
-      cur.angle = newAngle;
-      moved = true;
-    }
-  });
-  return moved;
-}
-
-// The label-stacking pass above only knows about avoiding overlap —
-// it can end up pushing a piece a long way down the page to dodge a
-// crowd, with nothing pulling it back toward its own family. Left
-// alone that's how a piece ends up looking like it belongs to a
-// completely different family than the one its line actually goes
-// to. This is the fix: after stacking, anything that's drifted past
-// a generous leash gets pulled back in along the line to its
-// nearest linked family, then one more light pass mops up any
-// overlap that correction reintroduces.
-function enforceFamilyLeash(visiblePieces){
-  var moved = false;
-  visiblePieces.forEach(function(n){
-    var nearest = null, nearestDist = Infinity;
-    n.links.forEach(function(fid){
-      var f = nodeById[fid];
-      var d = Math.sqrt((n.x - f.x) * (n.x - f.x) + (n.y - f.y) * (n.y - f.y));
-      if (d < nearestDist) { nearestDist = d; nearest = f; }
-    });
-    if (!nearest) return;
-    var leash = linkDistanceFor(nearest.id) * 1.9 + 50;
-    if (nearestDist > leash) {
-      var ux = (n.x - nearest.x) / nearestDist, uy = (n.y - nearest.y) / nearestDist;
-      n.x = nearest.x + ux * leash;
-      n.y = nearest.y + uy * leash;
-      moved = true;
-    }
-  });
-  return moved;
-}
-
-// Word count matters here, not the dots: lines are allowed to cross,
-// but no piece of text may ever sit on top of another. Labels point
-// outward — left if the piece sits left of centre, right if it sits
-// right. Within each side, labels are sorted top-to-bottom and
-// stacked with a guaranteed minimum gap (the same technique chart
-// libraries use for leader-line labels) — deterministic, so unlike
-// a pairwise push simulation it can't get stuck oscillating between
-// three labels that all overlap each other.
+// ---------- label sizing helpers ----------
+// Still used to size things and to do a single, bounded pass at
+// keeping labels apart — just no longer the engine that decides
+// where anything lives. Placement below is direct and geometric;
+// this is only for the light cleanup pass after.
 function approxLabelWidth(str){
   return Math.max(24, str.length * 6.4 + 6);
 }
@@ -441,33 +216,102 @@ function boxesOverlap(a, b){
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
-function stackBySide(visiblePieces){
+// ---------- piece placement: direct, one-shot, geometric ----------
+// No physics, no iteration, no convergence loop. Each visible piece
+// is placed on a fixed ring around whichever of its families is
+// actually open (the first one, in that piece's own link order, so
+// it's stable regardless of click order) — evenly spaced by angle
+// among its siblings on that same ring. That's the whole algorithm.
+// It's what makes the result predictable: the same open families
+// always produce the same layout, and nothing can wander far from
+// home chasing a perfect solve.
+function placePiecesDirect(visiblePieces){
+  var byFamily = {};
+  visiblePieces.forEach(function(p){
+    var anchorId = p.links.filter(function(fid){ return expanded[fid]; })[0];
+    p.anchorFamily = anchorId;
+    (byFamily[anchorId] = byFamily[anchorId] || []).push(p);
+  });
+  Object.keys(byFamily).forEach(function(fid){
+    var family = nodeById[fid];
+    var kids = byFamily[fid];
+    var dist = linkDistanceFor(fid);
+    var angleStep = (2 * Math.PI) / kids.length;
+    kids.forEach(function(p, i){
+      var angle = -Math.PI / 2 + i * angleStep;
+      p.x = family.x + dist * Math.cos(angle);
+      p.y = family.y + dist * Math.sin(angle);
+    });
+  });
+}
+
+// A single bounded pass to nudge apart dots that end up literally
+// overlapping (siblings on a tight ring, or two different families'
+// rings happening to intersect). Capped displacement, one pass —
+// this is cleanup, not a solver, and it deliberately stops rather
+// than chase a perfect result.
+var MAX_NUDGE = 40;
+function nudgeApartDots(visiblePieces){
+  for (var i = 0; i < visiblePieces.length; i++){
+    for (var j = i + 1; j < visiblePieces.length; j++){
+      var a = visiblePieces[i], b = visiblePieces[j];
+      var dx = a.x - b.x, dy = a.y - b.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+      var minDist = a.r + b.r + 26;
+      if (dist < minDist){
+        var overlap = Math.min((minDist - dist) / 2, MAX_NUDGE / 2);
+        var ux = dx / dist, uy = dy / dist;
+        a.x += ux * overlap; a.y += uy * overlap;
+        b.x -= ux * overlap; b.y -= uy * overlap;
+      }
+    }
+    families.forEach(function(f){
+      var famNode = nodeById[f.id];
+      var dx = visiblePieces[i].x - famNode.x, dy = visiblePieces[i].y - famNode.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+      var minDist = visiblePieces[i].r + famNode.r + 14;
+      if (dist < minDist){
+        var ux = dx / dist, uy = dy / dist;
+        visiblePieces[i].x = famNode.x + ux * minDist;
+        visiblePieces[i].y = famNode.y + uy * minDist;
+      }
+    });
+  }
+}
+
+// A single deterministic top-to-bottom sweep per side (left/right of
+// canvas centre) so labels in a shared column don't sit on each
+// other — but capped: if a piece would need to move more than
+// MAX_LABEL_PUSH from where placement put it, the sweep stops and a
+// little overlap is accepted rather than the piece wandering off.
+var MAX_LABEL_PUSH = 75;
+function settleLabels(visiblePieces){
+  visiblePieces.forEach(function(n){ pieceLabelBox(n); n.baseY = n.y; });
   var familyBoxes = families.map(function(f){ return familyLabelBox(nodeById[f.id]); });
   [-1, 1].forEach(function(side){
     var group = visiblePieces.filter(function(n){ return n.labelSide === side; });
     group.sort(function(a, b){ return a.y - b.y; });
-    var placed = []; // real boxes of pieces already placed on this side
+    var placed = [];
     group.forEach(function(n){
       var pBox = pieceLabelBox(n);
       var guard = 0;
       var conflict = true;
-      // Walk down past anything already there — family box or an
-      // earlier piece — until clear. Only ever moves forward (y
-      // increases), so this always terminates and, because every
-      // earlier item on this side is already final, never needs to
-      // be revisited once placed.
-      while (conflict && guard < 40) {
+      while (conflict && guard < 15) {
         conflict = false;
         for (var f = 0; f < familyBoxes.length; f++){
           if (boxesOverlap(pBox, familyBoxes[f])) {
-            n.y = familyBoxes[f].bottom + LABEL_HALF_H + LABEL_GAP;
+            var proposedY = familyBoxes[f].bottom + LABEL_HALF_H + LABEL_GAP;
+            if (proposedY - n.baseY > MAX_LABEL_PUSH) break; // accept the overlap rather than push further
+            n.y = proposedY;
             pBox = pieceLabelBox(n);
             conflict = true;
           }
         }
         for (var p = 0; p < placed.length; p++){
           if (boxesOverlap(pBox, placed[p])) {
-            n.y = placed[p].bottom + LABEL_HALF_H + LABEL_GAP;
+            var proposedY2 = placed[p].bottom + LABEL_HALF_H + LABEL_GAP;
+            if (proposedY2 - n.baseY > MAX_LABEL_PUSH) break;
+            n.y = proposedY2;
             pBox = pieceLabelBox(n);
             conflict = true;
           }
@@ -477,16 +321,52 @@ function stackBySide(visiblePieces){
       placed.push(pBox);
     });
   });
+  visiblePieces.forEach(function(n){ pieceLabelBox(n); }); // finalize labelSide for rendering
 }
 
-function resolveLabelOverlaps(visiblePieces){
-  visiblePieces.forEach(function(n){ pieceLabelBox(n); }); // assigns labelSide
-  stackBySide(visiblePieces);
-  visiblePieces.forEach(function(n){
-    n.x = clampX(n, n.x);
-    n.y = clampY(n, n.y);
-    pieceLabelBox(n); // finalize labelSide for rendering
+// ---------- family repositioning: capped, one-shot, direct ----------
+// Closed families always sit exactly at home. A newly-opening family
+// checks against already-settled open families; if their piece
+// rings would overlap, it's nudged away — but by a single computed
+// vector, capped at MAX_FAMILY_DRIFT, not an iterative physics
+// solve. If the cap isn't enough to fully clear the crowding, a
+// little tightness is accepted rather than the family wandering
+// further. Already-open families never move once settled.
+var MAX_FAMILY_DRIFT = 65;
+var previouslyOpenIds = {};
+function repositionOpenFamilies(){
+  var openIds = families.filter(function(f){ return expanded[f.id]; }).map(function(f){ return f.id; });
+
+  families.forEach(function(f){
+    var n = nodeById[f.id];
+    if (!expanded[f.id]) { n.x = n.homeX; n.y = n.homeY; }
   });
+
+  var newlyOpenIds = openIds.filter(function(id){ return !previouslyOpenIds[id]; });
+  var stableIds = openIds.filter(function(id){ return previouslyOpenIds[id]; });
+
+  newlyOpenIds.forEach(function(id){
+    var n = nodeById[id];
+    n.x = n.homeX; n.y = n.homeY;
+    var pushX = 0, pushY = 0;
+    stableIds.forEach(function(otherId){
+      var o = nodeById[otherId];
+      var dx = n.x - o.x, dy = n.y - o.y;
+      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+      var wanted = linkDistanceFor(id) + linkDistanceFor(otherId) + 55;
+      if (dist < wanted){
+        var shortfall = wanted - dist;
+        pushX += (dx / dist) * shortfall;
+        pushY += (dy / dist) * shortfall;
+      }
+    });
+    var mag = Math.sqrt(pushX * pushX + pushY * pushY);
+    if (mag > MAX_FAMILY_DRIFT) { pushX = (pushX / mag) * MAX_FAMILY_DRIFT; pushY = (pushY / mag) * MAX_FAMILY_DRIFT; }
+    n.x += pushX; n.y += pushY;
+  });
+
+  previouslyOpenIds = {};
+  openIds.forEach(function(id){ previouslyOpenIds[id] = true; });
 }
 
 var svg = document.getElementById('graph');
@@ -497,7 +377,6 @@ var NS = 'http://www.w3.org/2000/svg';
 var expanded = {};
 var openPieceId = null;
 var isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-var allRepellers = families.map(function(f){ return nodeById[f.id]; }); // reset below once pieces exist
 
 var piecePanel = document.getElementById('piece-panel');
 var graphArrows = document.getElementById('graph-arrows');
@@ -549,20 +428,14 @@ function openPanel(piece){
 }
 
 function clampX(n, v){
-  return Math.max(n.r - SAFE_MARGIN, Math.min(SAFE_MARGIN * 2 - n.r, v));
+  return Math.max(n.r, Math.min(VB_W - n.r, v));
 }
 function clampY(n, v){
-  return Math.max(n.r - SAFE_MARGIN, Math.min(SAFE_MARGIN * 2 - n.r, v));
+  return Math.max(n.r, Math.min(VB_H - n.r, v));
 }
 
 function drawEdges(){
   edgeLayer.innerHTML = '';
-  // A piece is visible because at least one of its families is
-  // open. Once it's visible, draw ALL of its connecting lines —
-  // including to families that aren't open — so a piece linked to
-  // a second family still shows that connection without opening
-  // that family's other pieces. Only the piece's own visibility
-  // depends on an open family; a line's visibility doesn't.
   var visiblePieceIds = {};
   pieces.forEach(function(p){
     if (p.links.some(function(fid){ return expanded[fid]; })) visiblePieceIds[p.id] = true;
@@ -580,7 +453,7 @@ function drawEdges(){
   });
 }
 
-var nodeElements = {}; // id -> <g> element, so we can move existing nodes instead of recreating them
+var nodeElements = {};
 
 function positionNode(n, g, animate){
   n.x = clampX(n, n.x);
@@ -588,7 +461,6 @@ function positionNode(n, g, animate){
   if (!animate) g.style.transition = 'none';
   g.style.transform = 'translate(' + n.x + 'px,' + n.y + 'px)';
   if (!animate) {
-    // force layout, then restore the transition for future moves
     g.getBoundingClientRect();
     g.style.transition = '';
   }
@@ -698,7 +570,7 @@ function visiblePieceList(){
 }
 
 var MAX_OPEN_FAMILIES = 3;
-var openOrder = []; // tracks which families are open, oldest first
+var openOrder = [];
 
 function toggleFamily(id){
   if (expanded[id]) {
@@ -715,123 +587,20 @@ function toggleFamily(id){
   render();
 }
 
-// Closed families always sit exactly on their home ring position —
-// that's the stable default look. When several crowded families are
-// open together, they're allowed to spread apart from each other a
-// little (a spring pulls each one back toward home, so it only
-// drifts as far as the crowding actually requires) — giving the
-// whole layout real room instead of forcing every fix onto the
-// pieces alone.
-// Personal space for a family isn't just about how many pieces it
-// has — a family with one very long title needs real room too. This
-// is what "By the Grave of the Unknown Queer" was missing before:
-// with a piece count of 1, the old estimate gave it almost no space
-// at all, even though that single label is wide.
-function spaceNeededFor(familyId){
-  var base = linkDistanceFor(familyId);
-  var maxLabelW = 0;
-  pieces.forEach(function(p){
-    if (p.links.indexOf(familyId) !== -1){
-      var w = approxLabelWidth(p.fullLabel || p.label);
-      if (w > maxLabelW) maxLabelW = w;
-    }
-  });
-  return base + maxLabelW * 0.5;
-}
-
-// Families that were already open and settled stay exactly where
-// they are — only a family that's newly opening moves, finding room
-// around the ones that are already there. This is what makes it
-// "the one family moves as it needs to," not "everything shifts
-// whenever anything changes." Closing a family never moves anyone
-// either — it just leaves; nobody needs to fill its space.
-var previouslyOpenIds = {};
-function repositionOpenFamilies(){
-  var openIds = families.filter(function(f){ return expanded[f.id]; }).map(function(f){ return f.id; });
-
-  families.forEach(function(f){
-    var n = nodeById[f.id];
-    if (!expanded[f.id]) { n.x = n.homeX; n.y = n.homeY; } // closed families always sit home
-  });
-
-  var newlyOpenIds = openIds.filter(function(id){ return !previouslyOpenIds[id]; });
-  var stableIds = openIds.filter(function(id){ return previouslyOpenIds[id]; });
-
-  if (newlyOpenIds.length === 0) {
-    previouslyOpenIds = {};
-    openIds.forEach(function(id){ previouslyOpenIds[id] = true; });
-    return; // nothing new opened — nobody needs to move
-  }
-
-  var movingFamilies = newlyOpenIds.map(function(id){ return nodeById[id]; });
-  var stableFamilies = stableIds.map(function(id){ return nodeById[id]; });
-  movingFamilies.forEach(function(f){ f.x = f.homeX; f.y = f.homeY; f.vx = 0; f.vy = 0; });
-
-  var FORCE_K = 0.9, SPRING_F = 0.05, TICKS_F = 80;
-  for (var t = 0; t < TICKS_F; t++){
-    var alpha = Math.max(1 - t / TICKS_F, 0.05);
-    // moving-vs-moving (only matters if several open at literally the same instant)
-    for (var i = 0; i < movingFamilies.length; i++){
-      for (var j = i + 1; j < movingFamilies.length; j++){
-        pushApart(movingFamilies[i], movingFamilies[j], alpha, FORCE_K, true);
-      }
-    }
-    // moving-vs-stable: only the moving one feels the push, the
-    // already-settled family is a fixed anchor and never budges
-    movingFamilies.forEach(function(a){
-      stableFamilies.forEach(function(b){
-        pushApart(a, b, alpha, FORCE_K, false);
-      });
-    });
-    movingFamilies.forEach(function(f){
-      f.vx += (f.homeX - f.x) * SPRING_F * alpha;
-      f.vy += (f.homeY - f.y) * SPRING_F * alpha;
-      f.vx *= 0.75; f.vy *= 0.75;
-      f.x += f.vx; f.y += f.vy;
-    });
-  }
-
-  previouslyOpenIds = {};
-  openIds.forEach(function(id){ previouslyOpenIds[id] = true; });
-}
-
-function pushApart(a, b, alpha, FORCE_K, bothMove){
-  var dx = a.x - b.x, dy = a.y - b.y;
-  var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-  var wantedSpace = spaceNeededFor(a.id) + spaceNeededFor(b.id) + 55;
-  var shortfall = wantedSpace - dist;
-  if (shortfall <= 0) return;
-  var ux = dx / dist, uy = dy / dist;
-  var force = FORCE_K * alpha * shortfall;
-  a.vx += ux * force; a.vy += uy * force;
-  if (bothMove) { b.vx -= ux * force; b.vy -= uy * force; }
-}
-
 function render(){
   var visible = visiblePieceList();
 
-  // newly-appearing pieces get seeded near their family before the
-  // settle pass, so they arrive from a sensible place rather than
-  // materialising mid-air
-  visible.forEach(function(n){
-    if (!n.everPositioned) {
-      var anchor = nodeById[n.links[0]];
-      var angle = Math.random() * 2 * Math.PI;
-      n.x = anchor.x + 20 * Math.cos(angle);
-      n.y = anchor.y + 20 * Math.sin(angle);
-      n.everPositioned = true;
-    }
-  });
-
-  allRepellers = families.map(function(f){ return nodeById[f.id]; });
   repositionOpenFamilies();
-  if (visible.length) settlePieces(visible);
+  placePiecesDirect(visible);
+  if (visible.length) {
+    nudgeApartDots(visible);
+    settleLabels(visible);
+  }
 
   var visibleIds = {};
   families.forEach(function(f){ visibleIds[f.id] = true; });
   visible.forEach(function(n){ visibleIds[n.id] = true; });
 
-  // remove nodes that should no longer be shown
   Object.keys(nodeElements).forEach(function(id){
     if (!visibleIds[id]) {
       nodeElements[id].remove();
@@ -839,13 +608,6 @@ function render(){
     }
   });
 
-  // A family that isn't itself open still gets its name shown if a
-  // currently-visible piece connects to it — that's the whole point
-  // of showing the connecting line at all. This is deliberately NOT
-  // the same as 'expanded': it only reveals that family's own NAME,
-  // never its other pieces. And since this is recomputed fresh from
-  // the current visible[] every render, closing the piece's actual
-  // family automatically clears it too — nothing extra to "collapse."
   var secondaryFamilyIds = {};
   visible.forEach(function(n){
     n.links.forEach(function(fid){
@@ -853,7 +615,6 @@ function render(){
     });
   });
 
-  // families: never re-created, just kept in sync (expanded class)
   families.forEach(function(f){
     var n = nodeById[f.id];
     var g = nodeElements[f.id];
@@ -863,7 +624,6 @@ function render(){
     g.classList.toggle('secondary', !expanded[f.id] && !!secondaryFamilyIds[f.id]);
   });
 
-  // pieces: move existing ones (animated), create new ones (not animated)
   visible.forEach(function(n){
     var g = nodeElements[n.id];
     if (g) {
@@ -876,55 +636,7 @@ function render(){
     }
   });
 
-  fitViewBox(visible);
   drawEdges();
-}
-
-// The canvas grows to fit whatever's open, but never shrinks back
-// down again — once it's grown to hold a busy moment, it stays that
-// size. Only the dots move after that; the box itself doesn't jump
-// around, which is what "organic" movement actually requires.
-var savedBounds = null;
-function fitViewBox(visiblePieces){
-  var pad = 24;
-  var minX = CENTER_X - VB_W / 2, maxX = CENTER_X + VB_W / 2;
-  var minY = CENTER_Y - VB_H / 2, maxY = CENTER_Y + VB_H / 2;
-
-  families.forEach(function(f){
-    var box = familyLabelBox(nodeById[f.id]);
-    minX = Math.min(minX, box.left); maxX = Math.max(maxX, box.right);
-    minY = Math.min(minY, box.top); maxY = Math.max(maxY, box.bottom);
-  });
-  visiblePieces.forEach(function(n){
-    var box = pieceLabelBox(n);
-    minX = Math.min(minX, box.left); maxX = Math.max(maxX, box.right);
-    minY = Math.min(minY, box.top); maxY = Math.max(maxY, box.bottom);
-  });
-
-  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
-
-  if (savedBounds) {
-    minX = Math.min(minX, savedBounds.minX);
-    minY = Math.min(minY, savedBounds.minY);
-    maxX = Math.max(maxX, savedBounds.maxX);
-    maxY = Math.max(maxY, savedBounds.maxY);
-  }
-
-  // Cap the box at a hard maximum size, relative to the default —
-  // applied to the ACCUMULATED total, after merging with history,
-  // not just to what this one render needed. Capping only the
-  // per-render contribution and then merging that into a total that
-  // itself has no cap is exactly how this kept climbing: each newly
-  // opened family added its own capped sliver, but nothing ever
-  // capped the running sum. This is what actually stops "zoom out."
-  var MAX_GROWTH = 1.6;
-  var maxW = VB_W * MAX_GROWTH, maxH = VB_H * MAX_GROWTH;
-  if ((maxX - minX) > maxW) { var cx = (minX + maxX) / 2; minX = cx - maxW / 2; maxX = cx + maxW / 2; }
-  if ((maxY - minY) > maxH) { var cy = (minY + maxY) / 2; minY = cy - maxH / 2; maxY = cy + maxH / 2; }
-
-  savedBounds = { minX: minX, minY: minY, maxX: maxX, maxY: maxY };
-
-  svg.setAttribute('viewBox', minX + ' ' + minY + ' ' + (maxX - minX) + ' ' + (maxY - minY));
 }
 
 render();
