@@ -20,24 +20,23 @@
 
   <main>
     <h2>works</h2>
-    <p>Click a family to expand it, then click a piece for details — scroll down to see them. Switch to a simple list any time.</p>
+    <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
 
     <div class="view-toggle">
       <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
     </div>
 
     <div class="map-graph" id="map-graph-view">
-      <div class="graph-wrap">
-        <svg id="graph" viewBox="0 0 680 620" role="img" aria-label="Diagram of works grouped by instrument family, click to expand and explore">
-          <g id="edges"></g>
-          <g id="nodes"></g>
+      <div class="tree-wrap" id="tree-wrap">
+        <svg id="tree" role="img" aria-label="Family tree of works, click a family to expand it">
+          <g id="tree-content"></g>
         </svg>
-        <div id="graph-arrows" class="graph-arrows" aria-hidden="true">
-          <span>▼</span><span>▼</span>
-        </div>
       </div>
-      <div id="piece-panel" class="piece-panel">
-        <button type="button" id="panel-close" class="panel-close" aria-label="Close">×</button>
+    </div>
+
+    <div class="panel-overlay" id="panel-overlay">
+      <div class="piece-panel" id="piece-panel">
+        <button type="button" id="panel-close" class="panel-close" aria-label="Close">&times;</button>
         <div id="panel-content" class="panel-text-col"></div>
         <div id="panel-images" class="panel-images-col"></div>
       </div>
@@ -79,9 +78,7 @@ showListBtn.addEventListener('click', function(){
 // Families: color + short label only. Order follows standard
 // orchestral score order: woodwinds, brass, percussion, then the
 // "Others" tier (keys, voice, electronics), then strings — then the
-// non-instrument categories after. Position is fixed on a ring —
-// families never move. Only pieces move, to make room when a
-// family is opened.
+// non-instrument categories after.
 var families = [
   {id:'winds', label:'winds', color:'#00c2c2'},
   {id:'brass', label:'brass', color:'#ff9500'},
@@ -137,266 +134,115 @@ var pieces = [
       'Photographer: Andreas Sætre</p>'}
 ];
 
-// ---------- sizing ----------
-// Fixed canvas, always. No growing, no shrinking, no dynamic
-// resizing based on what's open — that dynamic-sizing behavior is
-// what made things feel like they were sprawling and jumping
-// around. The tradeoff: in a rare dense case a label might sit
-// close to another rather than the whole canvas stretching to avoid
-// it. That's an intentional choice, not an oversight.
-var VB_W = 680, VB_H = 600;
-var CENTER_X = VB_W / 2, CENTER_Y = VB_H / 2;
-var FAMILY_R = 18;
-var PIECE_R = 5; // small dot; the label sits beside it, not inside it
-
-// ---------- family positions: fixed home ring, orchestral order ----------
-var FAMILY_RING = 190;
-families.forEach(function(f, i){
-  var angle = (i / families.length) * 2 * Math.PI - Math.PI / 2;
-  f.x = CENTER_X + FAMILY_RING * Math.cos(angle);
-  f.y = CENTER_Y + FAMILY_RING * Math.sin(angle);
-  f.homeX = f.x; f.homeY = f.y;
-});
-
 var nodeById = {};
-families.forEach(function(f){ nodeById[f.id] = Object.assign({type:'family', r: FAMILY_R}, f); });
+families.forEach(function(f){ nodeById[f.id] = f; });
+pieces.forEach(function(p){ nodeById[p.id] = p; });
 
-var edges = [];
-pieces.forEach(function(p){ p.links.forEach(function(fid){ edges.push({from:fid, to:p.id}); }); });
+// ---------- tree layout: deterministic, no physics ----------
+// Each family is a row on a vertical spine. Closed rows are compact
+// (just the circle). An open row grows tall enough to fit its
+// pieces, each piece getting its own dedicated vertical slot — which
+// is what guarantees pieces can never overlap: it's not solved for,
+// it's built in by construction. Opening or closing a family only
+// ever changes that family's own row height; every other row is
+// completely unaffected, so nothing else on the page ever moves.
+var SPINE_X = 46;
+var FAMILY_R = 22;
+var PIECE_R = 9;
+var CLOSED_ROW_H = 56;
+var PIECE_ROW_H = 34;
+var ROW_PAD = 16;
+var PIECE_X = 190;
+var CORNER_R = 7;
+var TOP_PAD = 18;
+var BOTTOM_PAD = 18;
 
-// How many pieces are attached to each family — a family with more
-// pieces gets a modestly wider ring, so density stays roughly even
-// as the catalog grows, without the ring ballooning outward.
-var pieceCountByFamily = {};
-pieces.forEach(function(p){
-  p.links.forEach(function(fid){
-    pieceCountByFamily[fid] = (pieceCountByFamily[fid] || 0) + 1;
-  });
-});
-var BASE_LINK_DISTANCE = 60;
-var LINK_GROWTH = 14;
-function linkDistanceFor(familyId){
-  var count = pieceCountByFamily[familyId] || 1;
-  return BASE_LINK_DISTANCE + LINK_GROWTH * Math.sqrt(count);
-}
+var MAX_OPEN_FAMILIES = 3;
+var expanded = {};
+var openOrder = [];
+var openPieceId = null;
 
-pieces.forEach(function(p){ nodeById[p.id] = Object.assign({type:'piece', r: PIECE_R, x: 0, y: 0}, p); });
-
-// ---------- label sizing helpers ----------
-// Still used to size things and to do a single, bounded pass at
-// keeping labels apart — just no longer the engine that decides
-// where anything lives. Placement below is direct and geometric;
-// this is only for the light cleanup pass after.
-function approxLabelWidth(str){
-  return Math.max(24, str.length * 6.4 + 6);
-}
-var LABEL_HALF_H = 9;
-var LABEL_GAP = 5;
-
-function pieceLabelBox(n){
-  var w = approxLabelWidth(n.fullLabel || n.label);
-  n.labelSide = n.x >= CENTER_X ? 1 : -1;
-  var left, right;
-  if (n.labelSide === 1) { left = n.x - n.r; right = n.x + n.r + 8 + w; }
-  else { left = n.x - n.r - 8 - w; right = n.x + n.r; }
-  return { left: left, right: right, top: n.y - LABEL_HALF_H, bottom: n.y + LABEL_HALF_H };
-}
-
-function familyLabelBox(f){
-  var w = approxLabelWidth(f.label);
-  return {
-    left: f.x - Math.max(f.r, w / 2) - 4,
-    right: f.x + Math.max(f.r, w / 2) + 4,
-    top: f.y - f.r - 24,
-    bottom: f.y + f.r
-  };
-}
-
-function boxesOverlap(a, b){
-  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-}
-
-// ---------- piece placement: direct, one-shot, geometric ----------
-// No physics, no iteration, no convergence loop. Each visible piece
-// is placed on a fixed ring around whichever of its families is
-// actually open (the first one, in that piece's own link order, so
-// it's stable regardless of click order) — evenly spaced by angle
-// among its siblings on that same ring. That's the whole algorithm.
-// It's what makes the result predictable: the same open families
-// always produce the same layout, and nothing can wander far from
-// home chasing a perfect solve.
-function placePiecesDirect(visiblePieces){
-  var byFamily = {};
-  visiblePieces.forEach(function(p){
-    var anchorId = p.links.filter(function(fid){ return expanded[fid]; })[0];
-    p.anchorFamily = anchorId;
-    (byFamily[anchorId] = byFamily[anchorId] || []).push(p);
-  });
-  Object.keys(byFamily).forEach(function(fid){
-    var family = nodeById[fid];
-    var kids = byFamily[fid];
-    var dist = linkDistanceFor(fid);
-    var angleStep = (2 * Math.PI) / kids.length;
-    kids.forEach(function(p, i){
-      var angle = -Math.PI / 2 + i * angleStep;
-      p.x = family.x + dist * Math.cos(angle);
-      p.y = family.y + dist * Math.sin(angle);
-    });
+function piecesFor(familyId){
+  // A piece belongs to the first family in ITS OWN link order that's
+  // currently open — stable regardless of click order, and each
+  // piece only ever occupies one row, never duplicated.
+  return pieces.filter(function(p){
+    return p.links[0] === familyId ? expanded[familyId] :
+      p.links.indexOf(familyId) !== -1 && expanded[familyId] &&
+      p.links.filter(function(fid){ return expanded[fid]; })[0] === familyId;
   });
 }
 
-// A single bounded pass to nudge apart dots that end up literally
-// overlapping (siblings on a tight ring, or two different families'
-// rings happening to intersect). Capped displacement, one pass —
-// this is cleanup, not a solver, and it deliberately stops rather
-// than chase a perfect result.
-var MAX_NUDGE = 40;
-function nudgeApartDots(visiblePieces){
-  for (var i = 0; i < visiblePieces.length; i++){
-    for (var j = i + 1; j < visiblePieces.length; j++){
-      var a = visiblePieces[i], b = visiblePieces[j];
-      var dx = a.x - b.x, dy = a.y - b.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      var minDist = a.r + b.r + 26;
-      if (dist < minDist){
-        var overlap = Math.min((minDist - dist) / 2, MAX_NUDGE / 2);
-        var ux = dx / dist, uy = dy / dist;
-        a.x += ux * overlap; a.y += uy * overlap;
-        b.x -= ux * overlap; b.y -= uy * overlap;
-      }
-    }
-    families.forEach(function(f){
-      var famNode = nodeById[f.id];
-      var dx = visiblePieces[i].x - famNode.x, dy = visiblePieces[i].y - famNode.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      var minDist = visiblePieces[i].r + famNode.r + 14;
-      if (dist < minDist){
-        var ux = dx / dist, uy = dy / dist;
-        visiblePieces[i].x = famNode.x + ux * minDist;
-        visiblePieces[i].y = famNode.y + uy * minDist;
-      }
-    });
-  }
-}
-
-// A single deterministic top-to-bottom sweep per side (left/right of
-// canvas centre) so labels in a shared column don't sit on each
-// other — but capped: if a piece would need to move more than
-// MAX_LABEL_PUSH from where placement put it, the sweep stops and a
-// little overlap is accepted rather than the piece wandering off.
-var MAX_LABEL_PUSH = 75;
-function settleLabels(visiblePieces){
-  visiblePieces.forEach(function(n){ pieceLabelBox(n); n.baseY = n.y; });
-  var familyBoxes = families.map(function(f){ return familyLabelBox(nodeById[f.id]); });
-  [-1, 1].forEach(function(side){
-    var group = visiblePieces.filter(function(n){ return n.labelSide === side; });
-    group.sort(function(a, b){ return a.y - b.y; });
-    var placed = [];
-    group.forEach(function(n){
-      var pBox = pieceLabelBox(n);
-      var guard = 0;
-      var conflict = true;
-      while (conflict && guard < 15) {
-        conflict = false;
-        for (var f = 0; f < familyBoxes.length; f++){
-          if (boxesOverlap(pBox, familyBoxes[f])) {
-            var proposedY = familyBoxes[f].bottom + LABEL_HALF_H + LABEL_GAP;
-            if (proposedY - n.baseY > MAX_LABEL_PUSH) break; // accept the overlap rather than push further
-            n.y = proposedY;
-            pBox = pieceLabelBox(n);
-            conflict = true;
-          }
-        }
-        for (var p = 0; p < placed.length; p++){
-          if (boxesOverlap(pBox, placed[p])) {
-            var proposedY2 = placed[p].bottom + LABEL_HALF_H + LABEL_GAP;
-            if (proposedY2 - n.baseY > MAX_LABEL_PUSH) break;
-            n.y = proposedY2;
-            pBox = pieceLabelBox(n);
-            conflict = true;
-          }
-        }
-        guard++;
-      }
-      placed.push(pBox);
-    });
-  });
-  visiblePieces.forEach(function(n){ pieceLabelBox(n); }); // finalize labelSide for rendering
-}
-
-// ---------- family repositioning: capped, one-shot, direct ----------
-// Closed families always sit exactly at home. A newly-opening family
-// checks against already-settled open families; if their piece
-// rings would overlap, it's nudged away — but by a single computed
-// vector, capped at MAX_FAMILY_DRIFT, not an iterative physics
-// solve. If the cap isn't enough to fully clear the crowding, a
-// little tightness is accepted rather than the family wandering
-// further. Already-open families never move once settled.
-var MAX_FAMILY_DRIFT = 65;
-var previouslyOpenIds = {};
-function repositionOpenFamilies(){
-  var openIds = families.filter(function(f){ return expanded[f.id]; }).map(function(f){ return f.id; });
+function computeLayout(){
+  var y = TOP_PAD;
+  var rows = [];
+  var secondaryFamilyIds = {}; // closed families a visible piece also links to
 
   families.forEach(function(f){
-    var n = nodeById[f.id];
-    if (!expanded[f.id]) { n.x = n.homeX; n.y = n.homeY; }
-  });
-
-  var newlyOpenIds = openIds.filter(function(id){ return !previouslyOpenIds[id]; });
-  var stableIds = openIds.filter(function(id){ return previouslyOpenIds[id]; });
-
-  newlyOpenIds.forEach(function(id){
-    var n = nodeById[id];
-    n.x = n.homeX; n.y = n.homeY;
-    var pushX = 0, pushY = 0;
-    stableIds.forEach(function(otherId){
-      var o = nodeById[otherId];
-      var dx = n.x - o.x, dy = n.y - o.y;
-      var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      var wanted = linkDistanceFor(id) + linkDistanceFor(otherId) + 55;
-      if (dist < wanted){
-        var shortfall = wanted - dist;
-        pushX += (dx / dist) * shortfall;
-        pushY += (dy / dist) * shortfall;
-      }
+    var isOpen = !!expanded[f.id];
+    var kids = isOpen ? piecesFor(f.id) : [];
+    kids.forEach(function(p){
+      p.links.forEach(function(fid){ if (fid !== f.id && !expanded[fid]) secondaryFamilyIds[fid] = true; });
     });
-    var mag = Math.sqrt(pushX * pushX + pushY * pushY);
-    if (mag > MAX_FAMILY_DRIFT) { pushX = (pushX / mag) * MAX_FAMILY_DRIFT; pushY = (pushY / mag) * MAX_FAMILY_DRIFT; }
-    n.x += pushX; n.y += pushY;
+    var rowH = isOpen ? Math.max(CLOSED_ROW_H, ROW_PAD * 2 + kids.length * PIECE_ROW_H) : CLOSED_ROW_H;
+    rows.push({ family: f, top: y, rowH: rowH, centerY: y + rowH / 2, kids: kids, isOpen: isOpen });
+    y += rowH;
   });
 
-  previouslyOpenIds = {};
-  openIds.forEach(function(id){ previouslyOpenIds[id] = true; });
+  rows.forEach(function(row){
+    row.secondary = !row.isOpen && !!secondaryFamilyIds[row.family.id];
+    var innerTop = row.top + ROW_PAD;
+    var innerH = row.rowH - ROW_PAD * 2;
+    row.kids.forEach(function(p, i){
+      var slotCenter = row.kids.length === 1
+        ? row.centerY
+        : innerTop + (innerH / row.kids.length) * (i + 0.5);
+      p.treeY = slotCenter;
+      p.treeX = PIECE_X;
+      p.homeFamily = row.family.id;
+    });
+  });
+
+  return { rows: rows, totalHeight: y + BOTTOM_PAD };
 }
 
-var svg = document.getElementById('graph');
-svg.setAttribute('viewBox', '0 0 ' + VB_W + ' ' + VB_H);
-var edgeLayer = document.getElementById('edges');
-var nodeLayer = document.getElementById('nodes');
+function connectorPath(familyY, pieceY){
+  var x1 = SPINE_X + FAMILY_R, x2 = PIECE_X - PIECE_R;
+  if (Math.abs(pieceY - familyY) < 0.5) return 'M' + x1 + ',' + familyY + ' L' + x2 + ',' + pieceY;
+  var dir = pieceY > familyY ? 1 : -1;
+  var midX = x1 + 26;
+  var r = CORNER_R;
+  return 'M' + x1 + ',' + familyY +
+    ' L' + (midX - r) + ',' + familyY +
+    ' Q' + midX + ',' + familyY + ' ' + midX + ',' + (familyY + r * dir) +
+    ' L' + midX + ',' + (pieceY - r * dir) +
+    ' Q' + midX + ',' + pieceY + ' ' + (midX + r) + ',' + pieceY +
+    ' L' + x2 + ',' + pieceY;
+}
+
+var svg = document.getElementById('tree');
+var treeContent = document.getElementById('tree-content');
+var treeWrap = document.getElementById('tree-wrap');
 var NS = 'http://www.w3.org/2000/svg';
-var expanded = {};
-var openPieceId = null;
-var isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 
 var piecePanel = document.getElementById('piece-panel');
-var graphArrows = document.getElementById('graph-arrows');
+var panelOverlay = document.getElementById('panel-overlay');
 var panelImages = document.getElementById('panel-images');
 var panelContent = document.getElementById('panel-content');
 var panelClose = document.getElementById('panel-close');
 
 function closePanel(){
   openPieceId = null;
-  piecePanel.classList.remove('open');
-  graphArrows.classList.remove('open');
+  panelOverlay.classList.remove('open');
   panelImages.innerHTML = '';
   panelContent.innerHTML = '';
 }
 panelClose.addEventListener('click', closePanel);
+panelOverlay.addEventListener('click', function(evt){ if (evt.target === panelOverlay) closePanel(); });
 
 function openPanel(piece){
   openPieceId = piece.id;
-  piecePanel.classList.add('open');
-  graphArrows.classList.add('open');
+  panelOverlay.classList.add('open');
 
   var textHtml = '';
   if (piece.panelHtml) {
@@ -406,9 +252,6 @@ function openPanel(piece){
     textHtml += '<p class="meta">' + piece.year + '</p>';
     textHtml += '<p>' + piece.forr + '</p>';
     textHtml += '<p class="meta">' + piece.where + '</p>';
-    if (piece.url) {
-      textHtml += '<p><a href="' + piece.url + '" target="_blank" rel="noopener">' + (piece.urlLabel || piece.url) + '</a></p>';
-    }
   }
   panelContent.innerHTML = textHtml;
 
@@ -421,156 +264,7 @@ function openPanel(piece){
   } else {
     panelImages.innerHTML = '';
   }
-
-  requestAnimationFrame(function(){
-    piecePanel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
-  });
 }
-
-function clampX(n, v){
-  return Math.max(n.r, Math.min(VB_W - n.r, v));
-}
-function clampY(n, v){
-  return Math.max(n.r, Math.min(VB_H - n.r, v));
-}
-
-function drawEdges(){
-  edgeLayer.innerHTML = '';
-  var visiblePieceIds = {};
-  pieces.forEach(function(p){
-    if (p.links.some(function(fid){ return expanded[fid]; })) visiblePieceIds[p.id] = true;
-  });
-  edges.forEach(function(e){
-    if (!visiblePieceIds[e.to]) return;
-    var a = nodeById[e.from], b = nodeById[e.to];
-    var line = document.createElementNS(NS,'line');
-    line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
-    line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
-    line.setAttribute('stroke', a.color || '#000000');
-    line.setAttribute('stroke-opacity', a.id === 'collabs' ? '0.6' : '0.3');
-    line.setAttribute('stroke-width', '1');
-    edgeLayer.appendChild(line);
-  });
-}
-
-var nodeElements = {};
-
-function positionNode(n, g, animate){
-  n.x = clampX(n, n.x);
-  n.y = clampY(n, n.y);
-  if (!animate) g.style.transition = 'none';
-  g.style.transform = 'translate(' + n.x + 'px,' + n.y + 'px)';
-  if (!animate) {
-    g.getBoundingClientRect();
-    g.style.transition = '';
-  }
-}
-
-function updatePieceLabel(n, textEl){
-  var side = n.labelSide === -1 ? -1 : 1;
-  if (side === 1) {
-    textEl.setAttribute('text-anchor', 'start');
-    textEl.setAttribute('x', n.r + 6);
-  } else {
-    textEl.setAttribute('text-anchor', 'end');
-    textEl.setAttribute('x', -(n.r + 6));
-  }
-}
-
-function createNode(n){
-  var g = document.createElementNS(NS,'g');
-  var isFamily = n.type === 'family';
-  g.setAttribute('class', isFamily ? 'family-node' : 'piece-node');
-  if (isFamily && expanded[n.id]) g.classList.add('expanded');
-
-  var circle = document.createElementNS(NS,'circle');
-  circle.setAttribute('r', n.r);
-  if (isFamily) {
-    circle.setAttribute('fill', n.color);
-    circle.setAttribute('stroke', 'none');
-    circle.setAttribute('stroke-width', '0');
-  } else {
-    circle.setAttribute('fill', '#ffffff');
-    circle.setAttribute('stroke', '#000000');
-    circle.setAttribute('stroke-width', '1.2');
-  }
-  g.appendChild(circle);
-
-  if (isFamily) {
-    var label = document.createElementNS(NS,'text');
-    label.textContent = n.label;
-    label.setAttribute('class', 'f-label');
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('y', -(n.r + 8));
-    label.setAttribute('font-family', 'Courier New, Courier, monospace');
-    label.setAttribute('font-size', '12');
-    label.setAttribute('fill', '#000000');
-    g.appendChild(label);
-  } else {
-    var text = document.createElementNS(NS,'text');
-    text.textContent = n.fullLabel || n.label;
-    text.setAttribute('class', 'p-label');
-    text.setAttribute('dy', '0.35em');
-    text.setAttribute('font-family', 'Helvetica Neue, Helvetica, Arial, sans-serif');
-    text.setAttribute('font-size', '11');
-    text.setAttribute('fill', '#000000');
-    g.appendChild(text);
-    updatePieceLabel(n, text);
-  }
-
-  nodeLayer.appendChild(g);
-  g.style.cursor = 'pointer';
-  nodeElements[n.id] = g;
-
-  var dragging = false, offX = 0, offY = 0, moved = 0;
-  function toSvgPoint(evt){
-    var pt = svg.createSVGPoint();
-    pt.x = evt.clientX; pt.y = evt.clientY;
-    return pt.matrixTransform(svg.getScreenCTM().inverse());
-  }
-  g.addEventListener('pointerdown', function(evt){
-    if (isTouchDevice) return;
-    evt.preventDefault();
-    dragging = true;
-    moved = 0;
-    g.setPointerCapture(evt.pointerId);
-    var p = toSvgPoint(evt);
-    offX = n.x - p.x; offY = n.y - p.y;
-    g.style.cursor = 'grabbing';
-  });
-  g.addEventListener('pointermove', function(evt){
-    if (!dragging) return;
-    var p = toSvgPoint(evt);
-    var newX = clampX(n, p.x + offX);
-    var newY = clampY(n, p.y + offY);
-    moved += Math.abs(newX - n.x) + Math.abs(newY - n.y);
-    n.x = newX; n.y = newY;
-    positionNode(n, g, false);
-    drawEdges();
-  });
-  g.addEventListener('pointerup', function(){
-    dragging = false;
-    g.style.cursor = 'pointer';
-    if (moved < 4) {
-      if (isFamily) {
-        toggleFamily(n.id);
-      } else {
-        if (openPieceId === n.id) { closePanel(); } else { openPanel(n); }
-      }
-    }
-  });
-
-  return g;
-}
-
-function visiblePieceList(){
-  return pieces
-    .map(function(p){ return nodeById[p.id]; })
-    .filter(function(n){ return n.links.some(function(fid){ return expanded[fid]; }); });
-}
-
-var MAX_OPEN_FAMILIES = 3;
-var openOrder = [];
 
 function toggleFamily(id){
   if (expanded[id]) {
@@ -587,58 +281,91 @@ function toggleFamily(id){
   render();
 }
 
+function fitHeight(){
+  var top = treeWrap.getBoundingClientRect().top;
+  var available = window.innerHeight - top - 24;
+  treeWrap.style.height = Math.max(320, available) + 'px';
+}
+
 function render(){
-  var visible = visiblePieceList();
+  var layout = computeLayout();
+  treeContent.innerHTML = '';
+  svg.setAttribute('viewBox', '0 0 400 ' + layout.totalHeight);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-  repositionOpenFamilies();
-  placePiecesDirect(visible);
-  if (visible.length) {
-    nudgeApartDots(visible);
-    settleLabels(visible);
-  }
+  layout.rows.forEach(function(row){
+    var f = row.family;
+    var g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'family-row' + (row.isOpen ? ' expanded' : '') + (row.secondary ? ' secondary' : ''));
+    g.style.cursor = 'pointer';
 
-  var visibleIds = {};
-  families.forEach(function(f){ visibleIds[f.id] = true; });
-  visible.forEach(function(n){ visibleIds[n.id] = true; });
+    var circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', SPINE_X); circle.setAttribute('cy', row.centerY); circle.setAttribute('r', FAMILY_R);
+    circle.setAttribute('fill', f.color);
+    g.appendChild(circle);
 
-  Object.keys(nodeElements).forEach(function(id){
-    if (!visibleIds[id]) {
-      nodeElements[id].remove();
-      delete nodeElements[id];
-    }
-  });
+    var label = document.createElementNS(NS, 'text');
+    label.textContent = f.label;
+    label.setAttribute('class', 'f-label');
+    label.setAttribute('x', SPINE_X + FAMILY_R + 10);
+    label.setAttribute('y', row.centerY);
+    label.setAttribute('dominant-baseline', 'central');
+    g.appendChild(label);
 
-  var secondaryFamilyIds = {};
-  visible.forEach(function(n){
-    n.links.forEach(function(fid){
-      if (!expanded[fid]) secondaryFamilyIds[fid] = true;
+    g.addEventListener('click', function(){ toggleFamily(f.id); });
+    treeContent.appendChild(g);
+
+    row.kids.forEach(function(p){
+      var path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', connectorPath(row.centerY, p.treeY));
+      path.setAttribute('class', 'connector');
+      path.setAttribute('stroke', f.color);
+      treeContent.appendChild(path);
+
+      var pg = document.createElementNS(NS, 'g');
+      pg.setAttribute('class', 'piece-node');
+      pg.style.cursor = 'pointer';
+
+      var pc = document.createElementNS(NS, 'circle');
+      pc.setAttribute('cx', p.treeX); pc.setAttribute('cy', p.treeY); pc.setAttribute('r', PIECE_R);
+      pg.appendChild(pc);
+
+      var pl = document.createElementNS(NS, 'text');
+      pl.textContent = p.fullLabel || p.label;
+      pl.setAttribute('class', 'p-label');
+      pl.setAttribute('x', p.treeX + PIECE_R + 8);
+      pl.setAttribute('y', p.treeY);
+      pl.setAttribute('dominant-baseline', 'central');
+      pg.appendChild(pl);
+
+      // small colored badge per additional linked family — no line,
+      // just a dot naming the connection, so it scales however many
+      // families a piece links to without more crossing lines
+      var otherLinks = p.links.filter(function(fid){ return fid !== p.homeFamily; });
+      otherLinks.forEach(function(fid, i){
+        var badge = document.createElementNS(NS, 'circle');
+        badge.setAttribute('cx', p.treeX - PIECE_R - 3 - i * 9);
+        badge.setAttribute('cy', p.treeY - PIECE_R - 2);
+        badge.setAttribute('r', 4);
+        badge.setAttribute('fill', nodeById[fid].color);
+        var title = document.createElementNS(NS, 'title');
+        title.textContent = 'also linked: ' + nodeById[fid].label;
+        badge.appendChild(title);
+        pg.appendChild(badge);
+      });
+
+      pg.addEventListener('click', function(evt){
+        evt.stopPropagation();
+        openPanel(p);
+      });
+      treeContent.appendChild(pg);
     });
   });
 
-  families.forEach(function(f){
-    var n = nodeById[f.id];
-    var g = nodeElements[f.id];
-    if (!g) { g = createNode(n); positionNode(n, g, false); }
-    else { positionNode(n, g, true); }
-    g.classList.toggle('expanded', !!expanded[f.id]);
-    g.classList.toggle('secondary', !expanded[f.id] && !!secondaryFamilyIds[f.id]);
-  });
-
-  visible.forEach(function(n){
-    var g = nodeElements[n.id];
-    if (g) {
-      positionNode(n, g, true);
-      var labelEl = g.querySelector('.p-label');
-      if (labelEl) updatePieceLabel(n, labelEl);
-    } else {
-      g = createNode(n);
-      positionNode(n, g, false);
-    }
-  });
-
-  drawEdges();
+  fitHeight();
 }
 
+window.addEventListener('resize', fitHeight);
 render();
 
 // ---------- plain-list view: generated from the same data as the ----------
