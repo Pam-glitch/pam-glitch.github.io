@@ -283,7 +283,8 @@ footer p {
 }
 
 .family-node:hover .f-label,
-.family-node.expanded .f-label {
+.family-node.expanded .f-label,
+.family-node.secondary .f-label {
   opacity: 1;
 }
 

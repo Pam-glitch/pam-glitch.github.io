@@ -14,7 +14,7 @@
     <h1>Adam A.Ø. Pambianchi</h1>
     <p class="tagline">Composer</p>
     <nav class="nav">
-      <a href="index.html">home</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="works.html" class="active">works</a><span class="sep">|</span><a href="next.html">next</a>|<span class="sep"></span><a href="contact.html">contact</a>
+      <a href="index.html">home</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="works.html" class="active">works</a><span class="sep">|</span><a href="next.html">next</a><span class="sep">|</span><a href="contact.html">contact</a>
     </nav>
   </header>
 
@@ -722,48 +722,89 @@ function toggleFamily(id){
 // drifts as far as the crowding actually requires) — giving the
 // whole layout real room instead of forcing every fix onto the
 // pieces alone.
+// Personal space for a family isn't just about how many pieces it
+// has — a family with one very long title needs real room too. This
+// is what "By the Grave of the Unknown Queer" was missing before:
+// with a piece count of 1, the old estimate gave it almost no space
+// at all, even though that single label is wide.
+function spaceNeededFor(familyId){
+  var base = linkDistanceFor(familyId);
+  var maxLabelW = 0;
+  pieces.forEach(function(p){
+    if (p.links.indexOf(familyId) !== -1){
+      var w = approxLabelWidth(p.fullLabel || p.label);
+      if (w > maxLabelW) maxLabelW = w;
+    }
+  });
+  return base + maxLabelW * 0.5;
+}
+
+// Families that were already open and settled stay exactly where
+// they are — only a family that's newly opening moves, finding room
+// around the ones that are already there. This is what makes it
+// "the one family moves as it needs to," not "everything shifts
+// whenever anything changes." Closing a family never moves anyone
+// either — it just leaves; nobody needs to fill its space.
+var previouslyOpenIds = {};
 function repositionOpenFamilies(){
-  var openFamilies = families.map(function(f){ return nodeById[f.id]; }).filter(function(f){ return expanded[f.id]; });
+  var openIds = families.filter(function(f){ return expanded[f.id]; }).map(function(f){ return f.id; });
 
   families.forEach(function(f){
     var n = nodeById[f.id];
-    if (!expanded[f.id]) { n.x = n.homeX; n.y = n.homeY; }
+    if (!expanded[f.id]) { n.x = n.homeX; n.y = n.homeY; } // closed families always sit home
   });
 
-  if (openFamilies.length < 2) {
-    openFamilies.forEach(function(f){ f.x = f.homeX; f.y = f.homeY; });
-    return;
+  var newlyOpenIds = openIds.filter(function(id){ return !previouslyOpenIds[id]; });
+  var stableIds = openIds.filter(function(id){ return previouslyOpenIds[id]; });
+
+  if (newlyOpenIds.length === 0) {
+    previouslyOpenIds = {};
+    openIds.forEach(function(id){ previouslyOpenIds[id] = true; });
+    return; // nothing new opened — nobody needs to move
   }
 
-  openFamilies.forEach(function(f){ f.x = f.homeX; f.y = f.homeY; f.vx = 0; f.vy = 0; });
+  var movingFamilies = newlyOpenIds.map(function(id){ return nodeById[id]; });
+  var stableFamilies = stableIds.map(function(id){ return nodeById[id]; });
+  movingFamilies.forEach(function(f){ f.x = f.homeX; f.y = f.homeY; f.vx = 0; f.vy = 0; });
+
   var FORCE_K = 0.9, SPRING_F = 0.05, TICKS_F = 80;
   for (var t = 0; t < TICKS_F; t++){
     var alpha = Math.max(1 - t / TICKS_F, 0.05);
-    for (var i = 0; i < openFamilies.length; i++){
-      for (var j = i + 1; j < openFamilies.length; j++){
-        var a = openFamilies[i], b = openFamilies[j];
-        var dx = a.x - b.x, dy = a.y - b.y;
-        var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        // "wanted space" is how far each family's pieces actually
-        // spread (not the tiny dot radius) — two families whose
-        // piece clouds would overlap push apart; two that are
-        // already clear of each other feel nothing and stay home.
-        var wantedSpace = linkDistanceFor(a.id) + linkDistanceFor(b.id) + 55;
-        var shortfall = wantedSpace - dist;
-        if (shortfall <= 0) continue;
-        var ux = dx / dist, uy = dy / dist;
-        var force = FORCE_K * alpha * shortfall;
-        a.vx += ux * force; a.vy += uy * force;
-        b.vx -= ux * force; b.vy -= uy * force;
+    // moving-vs-moving (only matters if several open at literally the same instant)
+    for (var i = 0; i < movingFamilies.length; i++){
+      for (var j = i + 1; j < movingFamilies.length; j++){
+        pushApart(movingFamilies[i], movingFamilies[j], alpha, FORCE_K, true);
       }
     }
-    openFamilies.forEach(function(f){
+    // moving-vs-stable: only the moving one feels the push, the
+    // already-settled family is a fixed anchor and never budges
+    movingFamilies.forEach(function(a){
+      stableFamilies.forEach(function(b){
+        pushApart(a, b, alpha, FORCE_K, false);
+      });
+    });
+    movingFamilies.forEach(function(f){
       f.vx += (f.homeX - f.x) * SPRING_F * alpha;
       f.vy += (f.homeY - f.y) * SPRING_F * alpha;
       f.vx *= 0.75; f.vy *= 0.75;
       f.x += f.vx; f.y += f.vy;
     });
   }
+
+  previouslyOpenIds = {};
+  openIds.forEach(function(id){ previouslyOpenIds[id] = true; });
+}
+
+function pushApart(a, b, alpha, FORCE_K, bothMove){
+  var dx = a.x - b.x, dy = a.y - b.y;
+  var dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+  var wantedSpace = spaceNeededFor(a.id) + spaceNeededFor(b.id) + 55;
+  var shortfall = wantedSpace - dist;
+  if (shortfall <= 0) return;
+  var ux = dx / dist, uy = dy / dist;
+  var force = FORCE_K * alpha * shortfall;
+  a.vx += ux * force; a.vy += uy * force;
+  if (bothMove) { b.vx -= ux * force; b.vy -= uy * force; }
 }
 
 function render(){
@@ -798,6 +839,20 @@ function render(){
     }
   });
 
+  // A family that isn't itself open still gets its name shown if a
+  // currently-visible piece connects to it — that's the whole point
+  // of showing the connecting line at all. This is deliberately NOT
+  // the same as 'expanded': it only reveals that family's own NAME,
+  // never its other pieces. And since this is recomputed fresh from
+  // the current visible[] every render, closing the piece's actual
+  // family automatically clears it too — nothing extra to "collapse."
+  var secondaryFamilyIds = {};
+  visible.forEach(function(n){
+    n.links.forEach(function(fid){
+      if (!expanded[fid]) secondaryFamilyIds[fid] = true;
+    });
+  });
+
   // families: never re-created, just kept in sync (expanded class)
   families.forEach(function(f){
     var n = nodeById[f.id];
@@ -805,6 +860,7 @@ function render(){
     if (!g) { g = createNode(n); positionNode(n, g, false); }
     else { positionNode(n, g, true); }
     g.classList.toggle('expanded', !!expanded[f.id]);
+    g.classList.toggle('secondary', !expanded[f.id] && !!secondaryFamilyIds[f.id]);
   });
 
   // pieces: move existing ones (animated), create new ones (not animated)
@@ -824,10 +880,6 @@ function render(){
   drawEdges();
 }
 
-// The canvas grows to fit whatever's currently open, rather than
-// squeezing labels into a fixed box (which is what caused text to
-// overlap when a lot was expanded at once). Never shrinks below the
-// default VB_W x VB_H size — it only ever grows outward from there.
 // The canvas grows to fit whatever's open, but never shrinks back
 // down again — once it's grown to hold a busy moment, it stays that
 // size. Only the dots move after that; the box itself doesn't jump
