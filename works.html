@@ -9,7 +9,6 @@
 </head>
 <body>
 <div class="wrap">
-
   <header class="site-header">
     <h1>Adam A.Ø. Pambianchi</h1>
     <p class="tagline">Composer</p>
@@ -17,16 +16,20 @@
       <a href="index.html">home</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="works.html" class="active">works</a><span class="sep">|</span><a href="next.html">next</a><span class="sep">|</span><a href="contact.html">contact</a>
     </nav>
   </header>
+</div>
 
+<div class="wrap-content">
   <main>
-    <h2>works</h2>
-    <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
+    <div class="col-narrow">
+      <h2>works</h2>
+      <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
 
-    <div class="view-toggle">
-      <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
+      <div class="view-toggle">
+        <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
+      </div>
     </div>
 
-    <div class="map-graph breakout" id="map-graph-view">
+    <div class="map-graph" id="map-graph-view">
       <div class="tree-wrap" id="tree-wrap">
         <svg id="tree" width="100%" height="100%" role="img" aria-label="Family tree of works, click a family to expand it">
           <g id="tree-content"></g>
@@ -40,18 +43,19 @@
       </div>
     </div>
 
-    <div class="map-list" id="map-list-view">
+    <div class="map-list col-narrow" id="map-list-view">
       <div class="view-toggle list-order-toggle">
         <button type="button" id="show-by-family" class="view-toggle-btn active">by family</button><span class="sep">|</span><button type="button" id="show-by-year" class="view-toggle-btn">by year</button>
       </div>
       <div id="list-content"></div>
     </div>
   </main>
+</div>
 
+<div class="wrap">
   <footer>
     <p>&copy; 2026 Adam A.Ø. Pambianchi.</p>
   </footer>
-
 </div>
 
 <script>
@@ -152,7 +156,7 @@ var CLOSED_ROW_H = 40;
 var PIECE_ROW_H = 46;
 var ROW_PAD = 14;
 var PIECE_X = 100;
-var STAGGER_X = 12; // per chronology rank: older pieces sit left, newer sit right
+var STAGGER_X = 24; // per chronology rank: older pieces sit left, newer sit right
 var CORNER_R = 6;
 var TOP_PAD = 16;
 var BOTTOM_PAD = 16;
@@ -234,18 +238,18 @@ function connectorPath(familyY, pieceY, pieceX){
 }
 
 // Secondary (multi-family) links use the same straight-line-plus-
-// rounded-corner style as the primary connectors, but the corner
-// sits just past the piece's own title — so the line runs right,
-// then turns down (or up) to the family's row, then heads left into
-// the family, all the way across the graph.
+// rounded-corner style as the primary connectors, but the vertical
+// run happens close to the spine — where there's nothing but other
+// family dots — instead of down the middle of the canvas, where it
+// would cross straight through unrelated piece titles.
 function secondaryLinkPath(familyY, pieceY, pieceX){
   var x1 = SPINE_X + FAMILY_R, x2 = pieceX;
   if (Math.abs(pieceY - familyY) < 0.5) return 'M' + x2 + ',' + pieceY + ' L' + x1 + ',' + familyY;
   var dir = familyY > pieceY ? 1 : -1;
-  var midX = x2 + 24;
+  var midX = x1 + 40; // offset from the primary connectors' own corner (x1+22) so the two trunks don't sit exactly on top of each other
   var r = CORNER_R;
   return 'M' + x2 + ',' + pieceY +
-    ' L' + (midX - r) + ',' + pieceY +
+    ' L' + (midX + r) + ',' + pieceY +
     ' Q' + midX + ',' + pieceY + ' ' + midX + ',' + (pieceY + r * dir) +
     ' L' + midX + ',' + (familyY - r * dir) +
     ' Q' + midX + ',' + familyY + ' ' + (midX - r) + ',' + familyY +
@@ -365,7 +369,6 @@ function render(){
     g.appendChild(label);
 
     g.addEventListener('click', function(){ toggleFamily(f.id); });
-    treeContent.appendChild(g);
 
     row.kids.forEach(function(p){
       var path = document.createElementNS(NS, 'path');
@@ -421,7 +424,7 @@ function render(){
       otherLinks.forEach(function(fid){
         var targetRow = familyRowById[fid];
         if (!targetRow) return;
-        secondaryLinkPaths.push({ familyY: targetRow.centerY, pieceY: p.treeY, labelEndX: labelEndX });
+        secondaryLinkPaths.push({ familyY: targetRow.centerY, pieceY: p.treeY, labelEndX: labelEndX, pieceId: p.id });
       });
 
       // the open piece gets a thin black box around its title + date
@@ -449,7 +452,15 @@ function render(){
         evt.stopPropagation();
         openPanel(p);
       });
+      pg.addEventListener('mouseenter', function(){
+        treeContent.querySelectorAll('[data-piece-id="' + p.id + '"]').forEach(function(el){ el.classList.add('active'); });
+      });
+      pg.addEventListener('mouseleave', function(){
+        treeContent.querySelectorAll('[data-piece-id="' + p.id + '"]').forEach(function(el){ el.classList.remove('active'); });
+      });
     });
+
+    treeContent.appendChild(g);
   });
 
   secondaryLinkPaths.forEach(function(link){
@@ -457,12 +468,12 @@ function render(){
     var anchorX = link.labelEndX + 4; // small gap after the title text
     path.setAttribute('d', secondaryLinkPath(link.familyY, link.pieceY, anchorX));
     path.setAttribute('class', 'secondary-link');
+    path.setAttribute('data-piece-id', link.pieceId);
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke', '#000000');
     path.setAttribute('stroke-width', '1.4');
     path.setAttribute('stroke-dasharray', '0.1,6');
     path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('opacity', '0.8');
     treeContent.insertBefore(path, treeContent.firstChild);
   });
 }

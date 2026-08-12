@@ -52,23 +52,27 @@ h1, h2 {
   margin: 0 auto;
 }
 
-/* works.html only: the graph escapes the 680px .wrap to use up to
-   1040px, but stays truly centered on the viewport (equal margins
-   left and right) rather than pinned to any container's edge — it
-   just starts further left and ends further right than the narrow
-   column above it, since it's simply a wider centered block. */
-.breakout {
-  width: 100%;
+/* works.html only: header and footer stay in the plain .wrap above
+   (680px, centered — identical to every other page). Everything
+   between them — intro text, graph, list view — lives in this wider
+   centered zone instead, so the graph's dots line up directly under
+   the paragraph and view-toggle above them rather than sitting off
+   on their own. .col-narrow just caps width inside it; nothing here
+   re-centers independently, so nothing can drift out of alignment
+   with its own neighbors. */
+.wrap-content {
+  max-width: var(--width);
+  margin: 0 auto;
 }
 
 @media (min-width: 900px) {
-  .breakout {
-    width: 100vw;
-    max-width: 1040px;
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
+  .wrap-content {
+    max-width: 820px;
   }
+}
+
+.wrap-content .col-narrow {
+  max-width: var(--width);
 }
 
 header.site-header {
@@ -300,6 +304,18 @@ footer p {
   transition: height 0.35s ease;
 }
 
+/* Multi-family dotted links stay quiet by default so they don't
+   clutter the graph, and come fully into view when you hover the
+   piece they belong to. */
+.secondary-link {
+  opacity: 0.35;
+  transition: opacity 0.15s ease;
+}
+
+.secondary-link.active {
+  opacity: 1;
+}
+
 /* Family rows: just a colour dot. The name only appears on hover
    (desktop) or once the family is tapped open (any device), so the
    graph stays compact as more families get added. */
@@ -351,7 +367,7 @@ footer p {
 .piece-panel {
   display: none;
   width: 100%;
-  max-width: 1040px;
+  max-width: 820px;
   margin-top: 8px;
   border: 1px solid rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
