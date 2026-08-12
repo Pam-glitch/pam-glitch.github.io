@@ -8,9 +8,9 @@
 <link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
-<div class="wrap">
+<div class="wrap-works">
 
-  <header class="site-header">
+  <header class="site-header col">
     <h1>Adam A.Ø. Pambianchi</h1>
     <p class="tagline">Composer</p>
     <nav class="nav">
@@ -19,14 +19,16 @@
   </header>
 
   <main>
-    <h2>works</h2>
-    <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
+    <div class="col">
+      <h2>works</h2>
+      <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
 
-    <div class="view-toggle">
-      <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
+      <div class="view-toggle">
+        <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
+      </div>
     </div>
 
-    <div class="map-graph breakout" id="map-graph-view">
+    <div class="map-graph" id="map-graph-view">
       <div class="tree-wrap" id="tree-wrap">
         <svg id="tree" width="100%" height="100%" role="img" aria-label="Family tree of works, click a family to expand it">
           <g id="tree-content"></g>
@@ -40,7 +42,7 @@
       </div>
     </div>
 
-    <div class="map-list" id="map-list-view">
+    <div class="map-list col" id="map-list-view">
       <div class="view-toggle list-order-toggle">
         <button type="button" id="show-by-family" class="view-toggle-btn active">by family</button><span class="sep">|</span><button type="button" id="show-by-year" class="view-toggle-btn">by year</button>
       </div>
@@ -48,7 +50,7 @@
     </div>
   </main>
 
-  <footer>
+  <footer class="col">
     <p>&copy; 2026 Adam A.Ø. Pambianchi.</p>
   </footer>
 
@@ -233,9 +235,28 @@ function connectorPath(familyY, pieceY, pieceX){
     ' L' + x2 + ',' + pieceY;
 }
 
-// Secondary (multi-family) links reuse this same shape — the
-// distinction is purely stroke style (dotted vs solid), so every
-// line on the graph reads as one consistent family.
+// Secondary (multi-family) links use the same straight-line-plus-
+// rounded-corner style as the primary connectors, but the corner
+// sits just past the piece's own title — so the line runs right,
+// then turns down (or up) to the family's row, then heads left into
+// the family, all the way across the graph.
+function secondaryLinkPath(familyY, pieceY, pieceX){
+  var x1 = SPINE_X + FAMILY_R, x2 = pieceX;
+  if (Math.abs(pieceY - familyY) < 0.5) return 'M' + x2 + ',' + pieceY + ' L' + x1 + ',' + familyY;
+  var dir = familyY > pieceY ? 1 : -1;
+  var midX = x2 + 24;
+  var r = CORNER_R;
+  return 'M' + x2 + ',' + pieceY +
+    ' L' + (midX - r) + ',' + pieceY +
+    ' Q' + midX + ',' + pieceY + ' ' + midX + ',' + (pieceY + r * dir) +
+    ' L' + midX + ',' + (familyY - r * dir) +
+    ' Q' + midX + ',' + familyY + ' ' + (midX - r) + ',' + familyY +
+    ' L' + x1 + ',' + familyY;
+}
+
+function shortFamilyLabel(label){
+  return label.length > 10 ? label.slice(0, 6) + '.' : label;
+}
 
 var svg = document.getElementById('tree');
 var treeContent = document.getElementById('tree-content');
@@ -330,7 +351,7 @@ function render(){
     g.appendChild(circle);
 
     var label = document.createElementNS(NS, 'text');
-    label.textContent = f.label;
+    label.textContent = row.isOpen ? shortFamilyLabel(f.label) : f.label;
     label.setAttribute('class', 'f-label');
     label.setAttribute('x', SPINE_X - FAMILY_R);
     label.setAttribute('y', row.centerY - FAMILY_R - 7);
@@ -338,6 +359,11 @@ function render(){
     label.setAttribute('font-family', 'Courier New, Courier, monospace');
     label.setAttribute('font-size', '13');
     label.setAttribute('fill', '#000000');
+    if (row.isOpen) {
+      var labelTitle = document.createElementNS(NS, 'title');
+      labelTitle.textContent = f.label;
+      label.appendChild(labelTitle);
+    }
     g.appendChild(label);
 
     g.addEventListener('click', function(){ toggleFamily(f.id); });
@@ -356,6 +382,7 @@ function render(){
       var pg = document.createElementNS(NS, 'g');
       pg.setAttribute('class', 'piece-node');
       pg.style.cursor = 'pointer';
+      treeContent.appendChild(pg); // attach immediately: getBBox() below needs pg to be live in the document
 
       var pc = document.createElementNS(NS, 'circle');
       pc.setAttribute('cx', p.treeX); pc.setAttribute('cy', p.treeY); pc.setAttribute('r', PIECE_R);
@@ -420,14 +447,13 @@ function render(){
         evt.stopPropagation();
         openPanel(p);
       });
-      treeContent.appendChild(pg);
     });
   });
 
   secondaryLinkPaths.forEach(function(link){
     var path = document.createElementNS(NS, 'path');
-    var anchorX = link.labelEndX + PIECE_R + 4; // cancels connectorPath's internal PIECE_R offset, plus a small gap after the text
-    path.setAttribute('d', connectorPath(link.familyY, link.pieceY, anchorX));
+    var anchorX = link.labelEndX + 4; // small gap after the title text
+    path.setAttribute('d', secondaryLinkPath(link.familyY, link.pieceY, anchorX));
     path.setAttribute('class', 'secondary-link');
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke', '#000000');

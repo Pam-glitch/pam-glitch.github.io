@@ -52,22 +52,18 @@ h1, h2 {
   margin: 0 auto;
 }
 
-/* Escapes the 680px .wrap to use more horizontal room, while staying
-   centered on the page — used only around the works.html graph and
-   piece panel. Header, footer, and everything else stay in the
-   normal narrow column above, same as every other page. */
-.breakout {
-  width: 100%;
+/* works.html only: one wide, centered outer column (1040px), with
+   header/intro/list/footer capped to the normal 680px width inside
+   it via .col — flush against the same left edge as the graph,
+   which is free to use the full outer width. No independent
+   centering per element, so nothing can drift out of alignment. */
+.wrap-works {
+  max-width: 1040px;
+  margin: 0 auto;
 }
 
-@media (min-width: 900px) {
-  .breakout {
-    width: 100vw;
-    max-width: 1040px;
-    position: relative;
-    left: 50%;
-    transform: translateX(-50%);
-  }
+.wrap-works .col {
+  max-width: var(--width);
 }
 
 header.site-header {
