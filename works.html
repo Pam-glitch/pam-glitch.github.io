@@ -231,23 +231,29 @@ function connectorPath(familyY, pieceY, pieceX){
     ' L' + x2 + ',' + pieceY;
 }
 
-// Secondary (multi-family) links use the same straight-line-plus-
-// rounded-corner style as the primary connectors, but the vertical
-// run happens close to the spine — where there's nothing but other
-// family dots — instead of down the middle of the canvas, where it
-// would cross straight through unrelated piece titles.
-function secondaryLinkPath(familyY, pieceY, pieceX, laneOffset){
-  var x1 = SPINE_X + FAMILY_R, x2 = pieceX;
-  if (Math.abs(pieceY - familyY) < 0.5) return 'M' + x2 + ',' + pieceY + ' L' + x1 + ',' + familyY;
-  var dir = familyY > pieceY ? 1 : -1;
-  var midX = x1 + 56 + (laneOffset || 0);
+// Secondary (multi-family) links route AWAY from the crowded middle
+// of the diagram instead of through it: out to the right of the
+// piece's own title (as far as the canvas allows, so parallel links
+// don't cross each other or other pieces' text), down/up to clear
+// the family's row, back in toward the spine, then a short straight
+// drop into the family dot from directly above — so the link always
+// reads as "entering the family from the top", never poking into
+// its side.
+function secondaryLinkPath(familyY, pieceY, pieceX, laneX){
+  var famX = SPINE_X;
+  var topY = familyY - FAMILY_R - 10; // approach point, just above the family dot
+  var famEntryY = familyY - FAMILY_R; // top edge of the family dot itself
   var r = CORNER_R;
-  return 'M' + x2 + ',' + pieceY +
-    ' L' + (midX + r) + ',' + pieceY +
-    ' Q' + midX + ',' + pieceY + ' ' + midX + ',' + (pieceY + r * dir) +
-    ' L' + midX + ',' + (familyY - r * dir) +
-    ' Q' + midX + ',' + familyY + ' ' + (midX - r) + ',' + familyY +
-    ' L' + x1 + ',' + familyY;
+  var dirDown = topY >= pieceY ? 1 : -1; // whether the out-and-down leg travels down or up
+
+  return 'M' + pieceX + ',' + pieceY +
+    ' L' + (laneX - r) + ',' + pieceY +
+    ' Q' + laneX + ',' + pieceY + ' ' + laneX + ',' + (pieceY + r * dirDown) +
+    ' L' + laneX + ',' + (topY - r * dirDown) +
+    ' Q' + laneX + ',' + topY + ' ' + (laneX - r) + ',' + topY +
+    ' L' + (famX + r) + ',' + topY +
+    ' Q' + famX + ',' + topY + ' ' + famX + ',' + (topY + r) +
+    ' L' + famX + ',' + famEntryY;
 }
 
 function shortFamilyLabel(label){
@@ -462,6 +468,7 @@ function render(){
   // instead of collapsing onto one shared trunk. Links that don't
   // overlap in Y can safely reuse the same lane.
   var LANE_STEP = 10;
+  var RIGHT_MARGIN = 24; // keeps the outermost lane clear of the canvas edge
   var sortedLinks = secondaryLinkPaths.slice().sort(function(a, b){
     return Math.min(a.pieceY, a.familyY) - Math.min(b.pieceY, b.familyY);
   });
@@ -478,7 +485,8 @@ function render(){
   secondaryLinkPaths.forEach(function(link){
     var path = document.createElementNS(NS, 'path');
     var anchorX = link.labelEndX + 4; // small gap after the title text
-    path.setAttribute('d', secondaryLinkPath(link.familyY, link.pieceY, anchorX, link.lane * LANE_STEP));
+    var laneX = vbw - RIGHT_MARGIN - link.lane * LANE_STEP; // lane 0 = furthest right / most "out"
+    path.setAttribute('d', secondaryLinkPath(link.familyY, link.pieceY, anchorX, laneX));
     path.setAttribute('class', 'secondary-link');
     path.setAttribute('data-piece-id', link.pieceId);
     path.setAttribute('fill', 'none');
