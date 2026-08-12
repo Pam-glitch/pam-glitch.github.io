@@ -184,6 +184,9 @@ var STAGGER_X = UNIT;      // per chronology rank: older pieces sit left, newer 
 var INITIAL_LINE_LEN = UNIT; // family dot -> first bend, sized to fit the family name
 var LANE_STEP = UNIT;      // gap between parallel dotted secondary-links
 
+var PHONE_BREAKPOINT = 900; // matches the CSS .grow-right breakpoint
+function isPhoneWidth(){ return window.innerWidth < PHONE_BREAKPOINT; }
+
 var expanded = {};
 var openOrder = [];
 var openPieceId = null;
@@ -240,6 +243,15 @@ function computeLayout(){
     return { yv: yv, label: (yv === Infinity ? 'TBA' : String(yv)), x: PIECE_X + GLOBAL_RANK_BY_YEAR[yv] * STAGGER_X };
   });
 
+  // On phone, once a year is picked, every visible piece shares one
+  // fixed column no matter which year — so switching years doesn't
+  // shift anything horizontally, and the graph never needs to grow
+  // past whatever the first column already fits in. The axis buttons
+  // above still sit at their real chronological x (see axisYears
+  // above) so the header still reads as a timeline; only the pieces
+  // themselves stop moving. Desktop keeps true per-year columns.
+  var lockToOneColumn = yearFilter !== null && isPhoneWidth();
+
   rows.forEach(function(row){
     row.secondary = !row.isOpen && !!secondaryFamilyIds[row.family.id];
     var innerTop = row.top + ROW_PAD;
@@ -252,7 +264,7 @@ function computeLayout(){
       // oldest year sits leftmost, newest furthest right — pieces
       // sharing the same year, even across different families, stay
       // aligned on the same vertical line; different years never share one.
-      p.treeX = PIECE_X + GLOBAL_RANK_BY_YEAR[yearValue(p.year)] * STAGGER_X;
+      p.treeX = lockToOneColumn ? PIECE_X : PIECE_X + GLOBAL_RANK_BY_YEAR[yearValue(p.year)] * STAGGER_X;
       p.homeFamily = row.family.id;
     });
   });
