@@ -8,9 +8,9 @@
 <link rel="stylesheet" href="style.css?v=28">
 </head>
 <body>
-<div class="wrap-works">
+<div class="wrap">
 
-  <header class="site-header col">
+  <header class="site-header">
     <h1>Adam A.Ø. Pambianchi</h1>
     <p class="tagline">Composer</p>
     <nav class="nav">
@@ -19,16 +19,14 @@
   </header>
 
   <main>
-    <div class="col">
-      <h2>works</h2>
-      <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
+    <h2>works</h2>
+    <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
 
-      <div class="view-toggle">
-        <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
-      </div>
+    <div class="view-toggle">
+      <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
     </div>
 
-    <div class="map-graph" id="map-graph-view">
+    <div class="map-graph breakout" id="map-graph-view">
       <div class="tree-wrap" id="tree-wrap">
         <svg id="tree" width="100%" height="100%" role="img" aria-label="Family tree of works, click a family to expand it">
           <g id="tree-content"></g>
@@ -42,7 +40,7 @@
       </div>
     </div>
 
-    <div class="map-list col" id="map-list-view">
+    <div class="map-list" id="map-list-view">
       <div class="view-toggle list-order-toggle">
         <button type="button" id="show-by-family" class="view-toggle-btn active">by family</button><span class="sep">|</span><button type="button" id="show-by-year" class="view-toggle-btn">by year</button>
       </div>
@@ -50,7 +48,7 @@
     </div>
   </main>
 
-  <footer class="col">
+  <footer>
     <p>&copy; 2026 Adam A.Ø. Pambianchi.</p>
   </footer>
 
@@ -426,17 +424,21 @@ function render(){
         secondaryLinkPaths.push({ familyY: targetRow.centerY, pieceY: p.treeY, labelEndX: labelEndX });
       });
 
-      // the open piece gets a thin black box around its dot + title,
-      // the same treatment the active nav link gets — text and dot
-      // stay exactly the size they already were
+      // the open piece gets a thin black box around its title + date
+      // only, the same treatment the active nav link gets — the dot
+      // stays outside it
       if (p.id === openPieceId) {
-        var bbox = pg.getBBox();
+        var plBox = pl.getBBox(), pdBox = pd.getBBox();
+        var minX = Math.min(plBox.x, pdBox.x);
+        var minY = Math.min(plBox.y, pdBox.y);
+        var maxX = Math.max(plBox.x + plBox.width, pdBox.x + pdBox.width);
+        var maxY = Math.max(plBox.y + plBox.height, pdBox.y + pdBox.height);
         var padX = 6, padY = 4;
         var box = document.createElementNS(NS, 'rect');
-        box.setAttribute('x', bbox.x - padX);
-        box.setAttribute('y', bbox.y - padY);
-        box.setAttribute('width', bbox.width + padX * 2);
-        box.setAttribute('height', bbox.height + padY * 2);
+        box.setAttribute('x', minX - padX);
+        box.setAttribute('y', minY - padY);
+        box.setAttribute('width', (maxX - minX) + padX * 2);
+        box.setAttribute('height', (maxY - minY) + padY * 2);
         box.setAttribute('fill', 'none');
         box.setAttribute('stroke', '#000000');
         box.setAttribute('stroke-width', '1');

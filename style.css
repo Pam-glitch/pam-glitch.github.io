@@ -52,18 +52,23 @@ h1, h2 {
   margin: 0 auto;
 }
 
-/* works.html only: one wide, centered outer column (1040px), with
-   header/intro/list/footer capped to the normal 680px width inside
-   it via .col — flush against the same left edge as the graph,
-   which is free to use the full outer width. No independent
-   centering per element, so nothing can drift out of alignment. */
-.wrap-works {
-  max-width: 1040px;
-  margin: 0 auto;
+/* works.html only: the graph escapes the 680px .wrap to use up to
+   1040px, but stays truly centered on the viewport (equal margins
+   left and right) rather than pinned to any container's edge — it
+   just starts further left and ends further right than the narrow
+   column above it, since it's simply a wider centered block. */
+.breakout {
+  width: 100%;
 }
 
-.wrap-works .col {
-  max-width: var(--width);
+@media (min-width: 900px) {
+  .breakout {
+    width: 100vw;
+    max-width: 1040px;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 header.site-header {
