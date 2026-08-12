@@ -129,7 +129,8 @@ var pieces = [
       '<p>Curator &amp; co-artist, with Vincenzo Madaghiele and Maria Gabriela Rubio, as part of the collective Perre alla Diavola.</p>' +
       '<p class="meta">Covered by <a href="https://www.sagat.no" target="_blank" rel="noopener">Sagat</a>, a Sámi newspaper<br>' +
       'Journalist: Sunniva Katrine Bornøy<br>' +
-      'Photographer: Andreas Sætre</p>'}
+      'Photographer: Andreas Sætre</p>'},
+  {id:'p20', label:'Workshop & concert with OFO', links:['orchestra'], year:'2027', forr:'orchestra', where:'Oslo Philharmonic, 5 May 2027'}
 ];
 
 var nodeById = {};
@@ -145,10 +146,10 @@ pieces.forEach(function(p){ nodeById[p.id] = p; });
 // ever changes that family's own row height; every other row is
 // completely unaffected, so nothing else on the page ever moves.
 var SPINE_X = 26;
-var FAMILY_R = 9;
+var FAMILY_R = 12;
 var PIECE_R = 6;
 var CLOSED_ROW_H = 40;
-var PIECE_ROW_H = 34;
+var PIECE_ROW_H = 46;
 var ROW_PAD = 14;
 var PIECE_X = 100;
 var STAGGER_X = 12; // per chronology rank: older pieces sit left, newer sit right
@@ -156,8 +157,8 @@ var CORNER_R = 6;
 var TOP_PAD = 16;
 var BOTTOM_PAD = 16;
 var PIECE_FONT_SIZE = 17; // matches the intro paragraph's body copy
+var DATE_FONT_SIZE = 12;
 
-var MAX_OPEN_FAMILIES = 3;
 var expanded = {};
 var openOrder = [];
 var openPieceId = null;
@@ -200,12 +201,17 @@ function computeLayout(){
     row.secondary = !row.isOpen && !!secondaryFamilyIds[row.family.id];
     var innerTop = row.top + ROW_PAD;
     var innerH = row.rowH - ROW_PAD * 2;
+    var yearRank = -1, lastYear = null;
     row.kids.forEach(function(p, i){
       var slotCenter = row.kids.length === 1
         ? row.centerY
         : innerTop + (innerH / row.kids.length) * (i + 0.5);
       p.treeY = slotCenter;
-      p.treeX = PIECE_X + i * STAGGER_X; // oldest (i=0) leftmost, newest furthest right
+      // oldest year sits leftmost, newest furthest right — but pieces
+      // sharing the same year stay aligned on the same vertical line
+      var yv = yearValue(p.year);
+      if (yv !== lastYear) { yearRank++; lastYear = yv; }
+      p.treeX = PIECE_X + yearRank * STAGGER_X;
       p.homeFamily = row.family.id;
     });
   });
@@ -226,6 +232,10 @@ function connectorPath(familyY, pieceY, pieceX){
     ' Q' + midX + ',' + pieceY + ' ' + (midX + r) + ',' + pieceY +
     ' L' + x2 + ',' + pieceY;
 }
+
+// Secondary (multi-family) links reuse this same shape — the
+// distinction is purely stroke style (dotted vs solid), so every
+// line on the graph reads as one consistent family.
 
 var svg = document.getElementById('tree');
 var treeContent = document.getElementById('tree-content');
@@ -292,10 +302,6 @@ function toggleFamily(id){
   } else {
     expanded[id] = true;
     openOrder.push(id);
-    while (openOrder.length > MAX_OPEN_FAMILIES) {
-      var oldest = openOrder.shift();
-      expanded[oldest] = false;
-    }
   }
   render();
 }
@@ -342,9 +348,9 @@ function render(){
       path.setAttribute('d', connectorPath(row.centerY, p.treeY, p.treeX));
       path.setAttribute('class', 'connector');
       path.setAttribute('fill', 'none');
-      path.setAttribute('stroke', f.color);
-      path.setAttribute('stroke-width', '1.8');
-      path.setAttribute('opacity', '0.85');
+      path.setAttribute('stroke', '#000000');
+      path.setAttribute('stroke-width', '1');
+      path.setAttribute('opacity', '0.8');
       treeContent.appendChild(path);
 
       var pg = document.createElementNS(NS, 'g');
@@ -355,7 +361,7 @@ function render(){
       pc.setAttribute('cx', p.treeX); pc.setAttribute('cy', p.treeY); pc.setAttribute('r', PIECE_R);
       pc.setAttribute('fill', '#ffffff');
       pc.setAttribute('stroke', '#000000');
-      pc.setAttribute('stroke-width', '1.1');
+      pc.setAttribute('stroke-width', '0.8');
       pg.appendChild(pc);
 
       var pl = document.createElementNS(NS, 'text');
@@ -366,18 +372,31 @@ function render(){
       pl.setAttribute('dominant-baseline', 'central');
       pl.setAttribute('font-family', 'Helvetica Neue, Helvetica, Arial, sans-serif');
       pl.setAttribute('font-size', PIECE_FONT_SIZE);
-      pl.setAttribute('fill', '#000000');
+      pl.setAttribute('fill', '#2b2b2b');
       pg.appendChild(pl);
+      var labelEndX = pl.getBBox().x + pl.getBBox().width;
 
-      // a piece that belongs to more than one family gets a dashed
-      // neon-blue line to each additional family instead of a badge —
+      var pd = document.createElementNS(NS, 'text');
+      pd.textContent = p.year;
+      pd.setAttribute('class', 'p-date');
+      pd.setAttribute('x', p.treeX + PIECE_R + 10);
+      pd.setAttribute('y', p.treeY + 16);
+      pd.setAttribute('dominant-baseline', 'central');
+      pd.setAttribute('font-family', 'Courier New, Courier, monospace');
+      pd.setAttribute('font-size', DATE_FONT_SIZE);
+      pd.setAttribute('fill', '#6b6b6b');
+      pg.appendChild(pd);
+
+      // a piece that belongs to more than one family gets a dotted
+      // black line to each additional family instead of a badge —
       // queued here, drawn last, once every family's row position
-      // (open or closed) is known
+      // (open or closed) is known. It starts right at the end of the
+      // piece's own title, not the dot.
       var otherLinks = p.links.filter(function(fid){ return fid !== p.homeFamily; });
       otherLinks.forEach(function(fid){
         var targetRow = familyRowById[fid];
         if (!targetRow) return;
-        secondaryLinkPaths.push({ familyY: targetRow.centerY, pieceY: p.treeY, pieceX: p.treeX });
+        secondaryLinkPaths.push({ familyY: targetRow.centerY, pieceY: p.treeY, labelEndX: labelEndX });
       });
 
       // the open piece gets a thin black box around its dot + title,
@@ -407,14 +426,15 @@ function render(){
 
   secondaryLinkPaths.forEach(function(link){
     var path = document.createElementNS(NS, 'path');
-    path.setAttribute('d', connectorPath(link.familyY, link.pieceY, link.pieceX));
+    var anchorX = link.labelEndX + PIECE_R + 4; // cancels connectorPath's internal PIECE_R offset, plus a small gap after the text
+    path.setAttribute('d', connectorPath(link.familyY, link.pieceY, anchorX));
     path.setAttribute('class', 'secondary-link');
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', '#00c8ff');
-    path.setAttribute('stroke-width', '1.6');
-    path.setAttribute('stroke-dasharray', '3,6');
+    path.setAttribute('stroke', '#000000');
+    path.setAttribute('stroke-width', '1.4');
+    path.setAttribute('stroke-dasharray', '0.1,6');
     path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('opacity', '0.9');
+    path.setAttribute('opacity', '0.8');
     treeContent.insertBefore(path, treeContent.firstChild);
   });
 }
