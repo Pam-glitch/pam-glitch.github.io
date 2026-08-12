@@ -52,27 +52,21 @@ h1, h2 {
   margin: 0 auto;
 }
 
-/* works.html only: header and footer stay in the plain .wrap above
-   (680px, centered — identical to every other page). Everything
-   between them — intro text, graph, list view — lives in this wider
-   centered zone instead, so the graph's dots line up directly under
-   the paragraph and view-toggle above them rather than sitting off
-   on their own. .col-narrow just caps width inside it; nothing here
-   re-centers independently, so nothing can drift out of alignment
-   with its own neighbors. */
-.wrap-content {
-  max-width: var(--width);
-  margin: 0 auto;
+/* works.html only: the graph is the one element that grows past the
+   680px column, extending only to the right — its left edge is
+   whatever .wrap's left edge already is, completely unchanged, so
+   it stays on the same central axis as the menu bar and everything
+   else. The extra width is capped at the blank margin that's
+   already sitting to the right of .wrap, so it can never overflow
+   the viewport or need its own centering. */
+.grow-right {
+  width: 100%;
 }
 
 @media (min-width: 900px) {
-  .wrap-content {
-    max-width: 820px;
+  .grow-right {
+    width: calc(100% + min(360px, (100vw - 40px - var(--width)) / 2));
   }
-}
-
-.wrap-content .col-narrow {
-  max-width: var(--width);
 }
 
 header.site-header {
@@ -367,7 +361,7 @@ footer p {
 .piece-panel {
   display: none;
   width: 100%;
-  max-width: 820px;
+  max-width: 1040px;
   margin-top: 8px;
   border: 1px solid rgba(0, 0, 0, 0.15);
   box-sizing: border-box;

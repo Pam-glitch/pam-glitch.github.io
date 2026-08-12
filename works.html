@@ -16,20 +16,16 @@
       <a href="index.html">home</a><span class="sep">|</span><a href="about.html">about</a><span class="sep">|</span><a href="works.html" class="active">works</a><span class="sep">|</span><a href="next.html">next</a><span class="sep">|</span><a href="contact.html">contact</a>
     </nav>
   </header>
-</div>
 
-<div class="wrap-content">
   <main>
-    <div class="col-narrow">
-      <h2>works</h2>
-      <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
+    <h2>works</h2>
+    <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
 
-      <div class="view-toggle">
-        <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
-      </div>
+    <div class="view-toggle">
+      <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
     </div>
 
-    <div class="map-graph" id="map-graph-view">
+    <div class="map-graph grow-right" id="map-graph-view">
       <div class="tree-wrap" id="tree-wrap">
         <svg id="tree" width="100%" height="100%" role="img" aria-label="Family tree of works, click a family to expand it">
           <g id="tree-content"></g>
@@ -43,16 +39,14 @@
       </div>
     </div>
 
-    <div class="map-list col-narrow" id="map-list-view">
+    <div class="map-list" id="map-list-view">
       <div class="view-toggle list-order-toggle">
         <button type="button" id="show-by-family" class="view-toggle-btn active">by family</button><span class="sep">|</span><button type="button" id="show-by-year" class="view-toggle-btn">by year</button>
       </div>
       <div id="list-content"></div>
     </div>
   </main>
-</div>
 
-<div class="wrap">
   <footer>
     <p>&copy; 2026 Adam A.Ø. Pambianchi.</p>
   </footer>
@@ -155,8 +149,8 @@ var PIECE_R = 6;
 var CLOSED_ROW_H = 40;
 var PIECE_ROW_H = 46;
 var ROW_PAD = 14;
-var PIECE_X = 100;
-var STAGGER_X = 24; // per chronology rank: older pieces sit left, newer sit right
+var PIECE_X = 150;
+var STAGGER_X = 36; // per chronology rank: older pieces sit left, newer sit right
 var CORNER_R = 6;
 var TOP_PAD = 16;
 var BOTTOM_PAD = 16;
@@ -242,11 +236,11 @@ function connectorPath(familyY, pieceY, pieceX){
 // run happens close to the spine — where there's nothing but other
 // family dots — instead of down the middle of the canvas, where it
 // would cross straight through unrelated piece titles.
-function secondaryLinkPath(familyY, pieceY, pieceX){
+function secondaryLinkPath(familyY, pieceY, pieceX, laneOffset){
   var x1 = SPINE_X + FAMILY_R, x2 = pieceX;
   if (Math.abs(pieceY - familyY) < 0.5) return 'M' + x2 + ',' + pieceY + ' L' + x1 + ',' + familyY;
   var dir = familyY > pieceY ? 1 : -1;
-  var midX = x1 + 40; // offset from the primary connectors' own corner (x1+22) so the two trunks don't sit exactly on top of each other
+  var midX = x1 + 56 + (laneOffset || 0);
   var r = CORNER_R;
   return 'M' + x2 + ',' + pieceY +
     ' L' + (midX + r) + ',' + pieceY +
@@ -463,10 +457,28 @@ function render(){
     treeContent.appendChild(g);
   });
 
+  // Give each secondary link its own lane when its Y-range overlaps
+  // another's, so simultaneous links stay visually distinguishable
+  // instead of collapsing onto one shared trunk. Links that don't
+  // overlap in Y can safely reuse the same lane.
+  var LANE_STEP = 10;
+  var sortedLinks = secondaryLinkPaths.slice().sort(function(a, b){
+    return Math.min(a.pieceY, a.familyY) - Math.min(b.pieceY, b.familyY);
+  });
+  var laneEnds = [];
+  sortedLinks.forEach(function(link){
+    var top = Math.min(link.pieceY, link.familyY);
+    var bottom = Math.max(link.pieceY, link.familyY);
+    var lane = laneEnds.findIndex(function(end){ return end < top - 6; });
+    if (lane === -1) lane = laneEnds.length;
+    laneEnds[lane] = bottom;
+    link.lane = lane;
+  });
+
   secondaryLinkPaths.forEach(function(link){
     var path = document.createElementNS(NS, 'path');
     var anchorX = link.labelEndX + 4; // small gap after the title text
-    path.setAttribute('d', secondaryLinkPath(link.familyY, link.pieceY, anchorX));
+    path.setAttribute('d', secondaryLinkPath(link.familyY, link.pieceY, anchorX, link.lane * LANE_STEP));
     path.setAttribute('class', 'secondary-link');
     path.setAttribute('data-piece-id', link.pieceId);
     path.setAttribute('fill', 'none');
