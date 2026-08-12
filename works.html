@@ -187,12 +187,24 @@ var LANE_STEP = UNIT;      // gap between parallel dotted secondary-links
 var expanded = {};
 var openOrder = [];
 var openPieceId = null;
-var yearFilter = null; // when set, only pieces from this year show within open families
+var yearFilter = null; // when set, only pieces from this year show
+var expandedSnapshot = null; // what was open before the year picker took over, restored on clear
 
 function yearValue(y){
   var n = parseInt(y, 10);
   return isNaN(n) ? Infinity : n; // TBA / unknown sinks to the newest end
 }
+
+// Column position reads as chronology across the WHOLE graph, so the
+// year-to-column mapping is global — built once from the entire
+// dataset, not from whatever happens to be open. That's what lets the
+// year picker offer every year immediately, before any family has
+// been expanded at all.
+var GLOBAL_YEARS = pieces.map(function(p){ return yearValue(p.year); })
+  .filter(function(yv, i, arr){ return arr.indexOf(yv) === i; })
+  .sort(function(a, b){ return a - b; });
+var GLOBAL_RANK_BY_YEAR = {};
+GLOBAL_YEARS.forEach(function(yv, i){ GLOBAL_RANK_BY_YEAR[yv] = i; });
 
 function piecesFor(familyId){
   // A piece belongs to the first family in ITS OWN link order that's
@@ -214,32 +226,18 @@ function computeLayout(){
 
   families.forEach(function(f){
     var isOpen = !!expanded[f.id];
-    var rawKids = isOpen ? piecesFor(f.id) : []; // full set, used for the year axis regardless of filter
-    var kids = (yearFilter !== null)
-      ? rawKids.filter(function(p){ return yearValue(p.year) === yearFilter; })
-      : rawKids; // what actually gets a row/slot this render
+    var kids = isOpen ? piecesFor(f.id) : [];
+    if (yearFilter !== null) kids = kids.filter(function(p){ return yearValue(p.year) === yearFilter; });
     kids.forEach(function(p){
       p.links.forEach(function(fid){ if (fid !== f.id && !expanded[fid]) secondaryFamilyIds[fid] = true; });
     });
     var rowH = isOpen ? Math.max(CLOSED_ROW_H, ROW_PAD * 2 + kids.length * PIECE_ROW_H) : CLOSED_ROW_H;
-    rows.push({ family: f, top: y, rowH: rowH, centerY: y + rowH / 2, kids: kids, rawKids: rawKids, isOpen: isOpen });
+    rows.push({ family: f, top: y, rowH: rowH, centerY: y + rowH / 2, kids: kids, isOpen: isOpen });
     y += rowH;
   });
 
-  // Column (x) position reads as chronology across the WHOLE graph, not
-  // per family — so the year-to-rank mapping has to be built once, from
-  // every visible piece across every open row, before any row assigns
-  // its own pieces an x. Otherwise each family starts counting its own
-  // columns from zero and unrelated years collide on the same column.
-  // Built from rawKids (not the filtered kids) so the year axis stays
-  // stable and clickable even while a filter is active.
-  var allYears = [];
-  rows.forEach(function(row){ row.rawKids.forEach(function(p){ allYears.push(yearValue(p.year)); }); });
-  var uniqueYears = allYears.filter(function(yv, i){ return allYears.indexOf(yv) === i; }).sort(function(a, b){ return a - b; });
-  var rankByYear = {};
-  uniqueYears.forEach(function(yv, i){ rankByYear[yv] = i; });
-  var axisYears = uniqueYears.map(function(yv){
-    return { yv: yv, label: (yv === Infinity ? 'TBA' : String(yv)), x: PIECE_X + rankByYear[yv] * STAGGER_X };
+  var axisYears = GLOBAL_YEARS.map(function(yv){
+    return { yv: yv, label: (yv === Infinity ? 'TBA' : String(yv)), x: PIECE_X + GLOBAL_RANK_BY_YEAR[yv] * STAGGER_X };
   });
 
   rows.forEach(function(row){
@@ -252,9 +250,9 @@ function computeLayout(){
         : innerTop + (innerH / row.kids.length) * (i + 0.5);
       p.treeY = slotCenter;
       // oldest year sits leftmost, newest furthest right — pieces
-      // sharing the same year, even across different families, now
-      // stay aligned on the same vertical line; different years never share one.
-      p.treeX = PIECE_X + rankByYear[yearValue(p.year)] * STAGGER_X;
+      // sharing the same year, even across different families, stay
+      // aligned on the same vertical line; different years never share one.
+      p.treeX = PIECE_X + GLOBAL_RANK_BY_YEAR[yearValue(p.year)] * STAGGER_X;
       p.homeFamily = row.family.id;
     });
   });
@@ -374,13 +372,28 @@ function toggleFamily(id){
   render();
 }
 
-// Tapping a year in the header narrows every currently-open family
-// down to just that year's pieces — tapping the same year again
-// clears the filter. Most useful on phones, where there's no room
-// to scan a long open family for one specific year, but works the
-// same on any screen size.
-function setYearFilter(yv){
-  yearFilter = (yearFilter === yv) ? null : yv;
+// Tapping a year in the header shows ONLY that year's pieces — it
+// opens exactly the families needed (each piece's own primary family,
+// so no row ever opens empty) and closes everything else. Since every
+// visible piece then shares one year, they all land in the same
+// column — no horizontal crowding, which is the whole point on a
+// phone. Tapping the same year again restores whatever was open
+// before you started picking years.
+function pickYear(yv){
+  if (yearFilter === yv) {
+    expanded = expandedSnapshot || {};
+    expandedSnapshot = null;
+    yearFilter = null;
+    render();
+    return;
+  }
+  if (expandedSnapshot === null) expandedSnapshot = Object.assign({}, expanded);
+  var newExpanded = {};
+  pieces.forEach(function(p){
+    if (yearValue(p.year) === yv) newExpanded[p.links[0]] = true;
+  });
+  expanded = newExpanded;
+  yearFilter = yv;
   render();
 }
 
@@ -566,7 +579,7 @@ function render(){
     at.setAttribute('font-size', FAMILY_LABEL_FONT_SIZE);
     ag.appendChild(at);
 
-    ag.addEventListener('click', function(){ setYearFilter(ay.yv); });
+    ag.addEventListener('click', function(){ pickYear(ay.yv); });
     treeContent.appendChild(ag);
   });
 
