@@ -286,12 +286,10 @@ footer p {
   margin: 24px 0;
 }
 
-.graph-wrap {
+#tree-wrap {
   width: 100%;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* No box, no outline — the graph sits right on the page background.
@@ -302,7 +300,7 @@ footer p {
   display: block;
   width: 100%;
   border: none;
-  touch-action: pan-y;
+  touch-action: pan-x pan-y;
   -webkit-user-select: none;
   -moz-user-select: none;
   user-select: none;

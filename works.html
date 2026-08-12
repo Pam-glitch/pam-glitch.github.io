@@ -387,7 +387,27 @@ function setYearFilter(yv){
 function render(){
   var layout = computeLayout();
   treeContent.innerHTML = '';
-  var vbw = contentWidth();
+
+  // The container's width is a starting point, not a hard ceiling.
+  // When enough year columns are open to push pieces past the visible
+  // edge (easy to hit on a phone), the graph needs to actually grow
+  // wider than the container and become horizontally scrollable —
+  // otherwise those pieces are just clipped and silently invisible,
+  // which is exactly what was happening before this fix.
+  var allKids = [];
+  layout.rows.forEach(function(row){ row.kids.forEach(function(p){ allKids.push(p); }); });
+  var neededWidth = allKids.reduce(function(max, p){
+    var labelW = measureLabelWidth(p.fullLabel || p.label, PIECE_FONT_SIZE, '"Helvetica Neue", Helvetica, Arial, sans-serif');
+    var rightEdge = p.treeX + PIECE_R + 10 + labelW + 24; // label start offset + measured text + right margin
+    return Math.max(max, rightEdge);
+  }, 0);
+
+  var containerWidth = contentWidth();
+  var vbw = Math.max(containerWidth, neededWidth);
+  var needsScroll = vbw > containerWidth;
+  svg.style.width = needsScroll ? vbw + 'px' : '100%';
+  treeWrapEl.style.overflowX = needsScroll ? 'auto' : 'visible';
+
   svg.setAttribute('viewBox', '0 0 ' + vbw + ' ' + layout.totalHeight);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   svg.style.height = layout.totalHeight + 'px';
