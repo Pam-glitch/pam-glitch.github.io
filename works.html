@@ -40,9 +40,6 @@
     </div>
 
     <div class="map-list" id="map-list-view">
-      <div class="view-toggle list-order-toggle">
-        <button type="button" id="show-by-family" class="view-toggle-btn active">by family</button><span class="sep">|</span><button type="button" id="show-by-year" class="view-toggle-btn">by year</button>
-      </div>
       <div id="list-content"></div>
     </div>
   </main>
@@ -71,21 +68,22 @@ showListBtn.addEventListener('click', function(){
   showGraphBtn.classList.remove('active');
 });
 
-// Families: color + short label only. Order follows standard
-// orchestral score order: woodwinds, brass, percussion, then the
-// "Others" tier (keys, voice, electronics), then strings — then the
-// non-instrument categories after.
+// Families: color, full label, and an explicit short label for when
+// the row is expanded (space is tight next to the piece column).
+// NOTE: "keys" is left as-is per request, but the standard classical-
+// music term for this family is usually "keyboard" — worth checking
+// that "keys" is the term you actually want before publishing.
 var families = [
-  {id:'winds', label:'winds', color:'#00c2c2'},
-  {id:'brass', label:'brass', color:'#ff9500'},
-  {id:'percussion', label:'percussion', color:'#ff5722'},
-  {id:'keys', label:'keys', color:'#2ecc40'},
-  {id:'voice', label:'voice', color:'#ff1744'},
-  {id:'electronics', label:'electronics', color:'#9013fe'},
-  {id:'strings', label:'strings', color:'#3d5afe'},
-  {id:'orchestra', label:'orchestra', color:'#2196f3'},
-  {id:'interdisciplinary', label:'interdisciplinary', color:'#4a4a4a'},
-  {id:'collabs', label:'collabs', color:'#ff00c8'}
+  {id:'winds', label:'winds', shortLabel:'winds', color:'#00c2c2'},
+  {id:'brass', label:'brass', shortLabel:'brass', color:'#ff9500'},
+  {id:'percussion', label:'percussion', shortLabel:'perc.', color:'#ff5722'},
+  {id:'keys', label:'keys', shortLabel:'keys', color:'#2ecc40'},
+  {id:'voice', label:'voice', shortLabel:'voice', color:'#ff1744'},
+  {id:'electronics', label:'electronics', shortLabel:'elect.', color:'#9013fe'},
+  {id:'strings', label:'strings', shortLabel:'strings', color:'#3d5afe'},
+  {id:'orchestra', label:'orchestra & ensembles', shortLabel:'orch. & ens.', color:'#2196f3'},
+  {id:'interdisciplinary', label:'interdisciplinary', shortLabel:'interd.', color:'#4a4a4a'},
+  {id:'collabs', label:'collabs', shortLabel:'collabs', color:'#ff00c8'}
 ];
 
 var pieces = [
@@ -146,20 +144,50 @@ pieces.forEach(function(p){ nodeById[p.id] = p; });
 var SPINE_X = 26;
 var FAMILY_R = 12;
 var PIECE_R = 6;
-var CLOSED_ROW_H = 40;
+var CLOSED_ROW_H = 46; // was 40 — a little more breathing room between family dots
 var PIECE_ROW_H = 46;
 var ROW_PAD = 14;
 var PIECE_X = 150;
-var STAGGER_X = 36; // per chronology rank: older pieces sit left, newer sit right
 var CORNER_R = 6;
-var TOP_PAD = 16;
+var TOP_PAD = 40; // extra room at the top for the year header row
 var BOTTOM_PAD = 16;
 var PIECE_FONT_SIZE = 17; // matches the intro paragraph's body copy
 var DATE_FONT_SIZE = 12;
+var FAMILY_LABEL_FONT_SIZE = 13;
+var FAMILY_LABEL_FONT = '"Courier New", Courier, monospace';
+
+// Ratio system: three distances that used to be separate magic
+// numbers — the gap between year columns, the length of the straight
+// stretch next to a family dot (where its name sits once expanded),
+// and the gap between parallel dotted secondary-links — are now all
+// driven off ONE unit, so the whole graph reads as consistently
+// spaced. The unit itself comes from the widest family name that
+// ISN'T abbreviated (winds/brass/keys/voice/strings/collabs) at the
+// font it's actually drawn in, plus a little padding — abbreviated
+// names (perc., elect., orch. & ens., interd.) are always shorter,
+// so they fit comfortably within a unit sized for the longest one
+// that stays full-length.
+var UNCHANGED_FAMILY_IDS = ['winds', 'brass', 'keys', 'voice', 'strings', 'collabs'];
+function measureLabelWidth(text, fontPx, fontFamily){
+  var c = measureLabelWidth._canvas || (measureLabelWidth._canvas = document.createElement('canvas'));
+  var ctx = c.getContext('2d');
+  ctx.font = fontPx + 'px ' + fontFamily;
+  return ctx.measureText(text).width;
+}
+var longestUnchangedWidth = Math.max.apply(null, UNCHANGED_FAMILY_IDS.map(function(id){
+  var f = families.filter(function(x){ return x.id === id; })[0];
+  return measureLabelWidth(f.label, FAMILY_LABEL_FONT_SIZE, FAMILY_LABEL_FONT);
+}));
+var UNIT = Math.ceil(longestUnchangedWidth) + 16; // + padding so text never touches the bend
+
+var STAGGER_X = UNIT;      // per chronology rank: older pieces sit left, newer sit right
+var INITIAL_LINE_LEN = UNIT; // family dot -> first bend, sized to fit the family name
+var LANE_STEP = UNIT;      // gap between parallel dotted secondary-links
 
 var expanded = {};
 var openOrder = [];
 var openPieceId = null;
+var yearFilter = null; // when set, only pieces from this year show within open families
 
 function yearValue(y){
   var n = parseInt(y, 10);
@@ -186,42 +214,59 @@ function computeLayout(){
 
   families.forEach(function(f){
     var isOpen = !!expanded[f.id];
-    var kids = isOpen ? piecesFor(f.id) : [];
+    var rawKids = isOpen ? piecesFor(f.id) : []; // full set, used for the year axis regardless of filter
+    var kids = (yearFilter !== null)
+      ? rawKids.filter(function(p){ return yearValue(p.year) === yearFilter; })
+      : rawKids; // what actually gets a row/slot this render
     kids.forEach(function(p){
       p.links.forEach(function(fid){ if (fid !== f.id && !expanded[fid]) secondaryFamilyIds[fid] = true; });
     });
     var rowH = isOpen ? Math.max(CLOSED_ROW_H, ROW_PAD * 2 + kids.length * PIECE_ROW_H) : CLOSED_ROW_H;
-    rows.push({ family: f, top: y, rowH: rowH, centerY: y + rowH / 2, kids: kids, isOpen: isOpen });
+    rows.push({ family: f, top: y, rowH: rowH, centerY: y + rowH / 2, kids: kids, rawKids: rawKids, isOpen: isOpen });
     y += rowH;
+  });
+
+  // Column (x) position reads as chronology across the WHOLE graph, not
+  // per family — so the year-to-rank mapping has to be built once, from
+  // every visible piece across every open row, before any row assigns
+  // its own pieces an x. Otherwise each family starts counting its own
+  // columns from zero and unrelated years collide on the same column.
+  // Built from rawKids (not the filtered kids) so the year axis stays
+  // stable and clickable even while a filter is active.
+  var allYears = [];
+  rows.forEach(function(row){ row.rawKids.forEach(function(p){ allYears.push(yearValue(p.year)); }); });
+  var uniqueYears = allYears.filter(function(yv, i){ return allYears.indexOf(yv) === i; }).sort(function(a, b){ return a - b; });
+  var rankByYear = {};
+  uniqueYears.forEach(function(yv, i){ rankByYear[yv] = i; });
+  var axisYears = uniqueYears.map(function(yv){
+    return { yv: yv, label: (yv === Infinity ? 'TBA' : String(yv)), x: PIECE_X + rankByYear[yv] * STAGGER_X };
   });
 
   rows.forEach(function(row){
     row.secondary = !row.isOpen && !!secondaryFamilyIds[row.family.id];
     var innerTop = row.top + ROW_PAD;
     var innerH = row.rowH - ROW_PAD * 2;
-    var yearRank = -1, lastYear = null;
     row.kids.forEach(function(p, i){
       var slotCenter = row.kids.length === 1
         ? row.centerY
         : innerTop + (innerH / row.kids.length) * (i + 0.5);
       p.treeY = slotCenter;
-      // oldest year sits leftmost, newest furthest right — but pieces
-      // sharing the same year stay aligned on the same vertical line
-      var yv = yearValue(p.year);
-      if (yv !== lastYear) { yearRank++; lastYear = yv; }
-      p.treeX = PIECE_X + yearRank * STAGGER_X;
+      // oldest year sits leftmost, newest furthest right — pieces
+      // sharing the same year, even across different families, now
+      // stay aligned on the same vertical line; different years never share one.
+      p.treeX = PIECE_X + rankByYear[yearValue(p.year)] * STAGGER_X;
       p.homeFamily = row.family.id;
     });
   });
 
-  return { rows: rows, totalHeight: y + BOTTOM_PAD };
+  return { rows: rows, totalHeight: y + BOTTOM_PAD, axisYears: axisYears };
 }
 
 function connectorPath(familyY, pieceY, pieceX){
   var x1 = SPINE_X + FAMILY_R, x2 = pieceX - PIECE_R;
   if (Math.abs(pieceY - familyY) < 0.5) return 'M' + x1 + ',' + familyY + ' L' + x2 + ',' + pieceY;
   var dir = pieceY > familyY ? 1 : -1;
-  var midX = x1 + 22;
+  var midX = x1 + INITIAL_LINE_LEN;
   var r = CORNER_R;
   return 'M' + x1 + ',' + familyY +
     ' L' + (midX - r) + ',' + familyY +
@@ -256,8 +301,8 @@ function secondaryLinkPath(familyY, pieceY, pieceX, laneX){
     ' L' + famX + ',' + famEntryY;
 }
 
-function shortFamilyLabel(label){
-  return label.length > 10 ? label.slice(0, 6) + '.' : label;
+function shortFamilyLabel(family){
+  return family.shortLabel;
 }
 
 var svg = document.getElementById('tree');
@@ -329,6 +374,16 @@ function toggleFamily(id){
   render();
 }
 
+// Tapping a year in the header narrows every currently-open family
+// down to just that year's pieces — tapping the same year again
+// clears the filter. Most useful on phones, where there's no room
+// to scan a long open family for one specific year, but works the
+// same on any screen size.
+function setYearFilter(yv){
+  yearFilter = (yearFilter === yv) ? null : yv;
+  render();
+}
+
 function render(){
   var layout = computeLayout();
   treeContent.innerHTML = '';
@@ -353,7 +408,7 @@ function render(){
     g.appendChild(circle);
 
     var label = document.createElementNS(NS, 'text');
-    label.textContent = row.isOpen ? shortFamilyLabel(f.label) : f.label;
+    label.textContent = row.isOpen ? shortFamilyLabel(f) : f.label;
     label.setAttribute('class', 'f-label');
     label.setAttribute('x', SPINE_X - FAMILY_R);
     label.setAttribute('y', row.centerY - FAMILY_R - 7);
@@ -463,11 +518,42 @@ function render(){
     treeContent.appendChild(g);
   });
 
+  // Year axis: one label per column, sitting in the top margin. Doubles
+  // as a filter — click a year to narrow every open family down to
+  // just that year, click it again to clear.
+  var AXIS_Y = TOP_PAD - 22;
+  layout.axisYears.forEach(function(ay){
+    var ag = document.createElementNS(NS, 'g');
+    ag.setAttribute('class', 'year-axis-item' + (yearFilter === ay.yv ? ' active' : ''));
+    ag.style.cursor = 'pointer';
+
+    var hit = document.createElementNS(NS, 'rect');
+    hit.setAttribute('x', ay.x - STAGGER_X / 2);
+    hit.setAttribute('y', AXIS_Y - 14);
+    hit.setAttribute('width', STAGGER_X);
+    hit.setAttribute('height', 28);
+    hit.setAttribute('fill', 'transparent');
+    ag.appendChild(hit);
+
+    var at = document.createElementNS(NS, 'text');
+    at.textContent = ay.label;
+    at.setAttribute('class', 'year-axis-label');
+    at.setAttribute('x', ay.x);
+    at.setAttribute('y', AXIS_Y);
+    at.setAttribute('text-anchor', 'middle');
+    at.setAttribute('dominant-baseline', 'central');
+    at.setAttribute('font-family', FAMILY_LABEL_FONT);
+    at.setAttribute('font-size', FAMILY_LABEL_FONT_SIZE);
+    ag.appendChild(at);
+
+    ag.addEventListener('click', function(){ setYearFilter(ay.yv); });
+    treeContent.appendChild(ag);
+  });
+
   // Give each secondary link its own lane when its Y-range overlaps
   // another's, so simultaneous links stay visually distinguishable
   // instead of collapsing onto one shared trunk. Links that don't
   // overlap in Y can safely reuse the same lane.
-  var LANE_STEP = 10;
   var RIGHT_MARGIN = 24; // keeps the outermost lane clear of the canvas edge
   var sortedLinks = secondaryLinkPaths.slice().sort(function(a, b){
     return Math.min(a.pieceY, a.familyY) - Math.min(b.pieceY, b.familyY);
@@ -532,10 +618,10 @@ function pieceListItem(p, withDot){
 
 function renderListByFamily(){
   var html = '';
-  families.forEach(function(f, i){
+  families.forEach(function(f){
     var members = pieces.filter(function(p){ return p.links.indexOf(f.id) !== -1; });
     if (!members.length) return;
-    html += '<details' + (i === 0 ? ' open' : '') + '>' +
+    html += '<details>' +
       '<summary style="border-left: 4px solid ' + f.color + '; padding-left: 10px;">' + cap(f.label) + '</summary>' +
       '<ul class="recent">' + members.map(function(p){ return pieceListItem(p, false); }).join('') + '</ul>' +
       '</details>';
@@ -543,45 +629,9 @@ function renderListByFamily(){
   document.getElementById('list-content').innerHTML = html;
 }
 
-function renderListByYear(){
-  var byYear = {};
-  var yearOrder = [];
-  pieces.forEach(function(p){
-    var y = p.year || 'TBA';
-    if (!byYear[y]) { byYear[y] = []; yearOrder.push(y); }
-    byYear[y].push(p);
-  });
-  yearOrder.sort(function(a, b){
-    var na = parseInt(a, 10), nb = parseInt(b, 10);
-    if (isNaN(na)) return 1;   // non-numeric (TBA) sinks to the end
-    if (isNaN(nb)) return -1;
-    return nb - na;            // most recent first
-  });
-  var html = '';
-  yearOrder.forEach(function(y, i){
-    html += '<details' + (i === 0 ? ' open' : '') + '>' +
-      '<summary style="border-left: 4px solid var(--ink); opacity: 0.55; padding-left: 10px;">' + y + '</summary>' +
-      '<ul class="recent">' + byYear[y].map(function(p){ return pieceListItem(p, true); }).join('') + '</ul>' +
-      '</details>';
-  });
-  document.getElementById('list-content').innerHTML = html;
-}
-
-var showByFamilyBtn = document.getElementById('show-by-family');
-var showByYearBtn = document.getElementById('show-by-year');
-showByFamilyBtn.addEventListener('click', function(){
-  renderListByFamily();
-  showByFamilyBtn.classList.add('active');
-  showByYearBtn.classList.remove('active');
-});
-showByYearBtn.addEventListener('click', function(){
-  renderListByYear();
-  showByYearBtn.classList.add('active');
-  showByFamilyBtn.classList.remove('active');
-});
-
 renderListByFamily();
 </script>
+
 
 </body>
 </html>

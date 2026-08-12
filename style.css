@@ -185,9 +185,20 @@ p {
   margin: 0 0 16px;
 }
 
-/* works table */
+/* next.html table: on narrow screens the 4-column table (esp. the
+   "where" column, which can run long) is wider than the viewport can
+   comfortably wrap — .table-scroll lets that table scroll
+   horizontally on its own instead of forcing the whole page wider
+   than the screen. */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 table {
   width: 100%;
+  min-width: 560px;
   border-collapse: collapse;
   font-size: 15px;
   margin-bottom: 8px;
@@ -333,6 +344,23 @@ footer p {
   transition: none;
 }
 
+/* Year axis: quiet by default, same treatment as the view-toggle
+   buttons — bold + underlined when it's the active filter. */
+.year-axis-label {
+  fill: var(--gray);
+  opacity: 0.55;
+}
+
+.year-axis-item:hover .year-axis-label {
+  opacity: 1;
+}
+
+.year-axis-item.active .year-axis-label {
+  fill: var(--ink);
+  opacity: 1;
+  font-weight: bold;
+}
+
 /* Neon fuchsia arrows, shown under the graph when a piece is open */
 .graph-arrows {
   color: #ff00ff;
@@ -458,12 +486,6 @@ footer p {
 .map-list ul.recent li {
   border-bottom: none;
   padding: 6px 0 6px 16px;
-}
-
-.list-order-toggle {
-  margin: 0 0 20px;
-  padding-bottom: 0;
-  border-bottom: none;
 }
 
 .piece-dot {
