@@ -26,6 +26,11 @@
     </div>
 
     <div class="map-graph grow-right" id="map-graph-view">
+      <div class="year-switcher" id="year-switcher">
+        <button type="button" id="year-prev" class="year-switcher-btn" aria-label="Previous year">&lsaquo;</button>
+        <span class="year-switcher-label" id="year-switcher-label">2026</span>
+        <button type="button" id="year-next" class="year-switcher-btn" aria-label="Next year">&rsaquo;</button>
+      </div>
       <div class="tree-wrap" id="tree-wrap">
         <svg id="tree" width="100%" height="100%" role="img" aria-label="Family tree of works, click a family to expand it">
           <g id="tree-content"></g>
@@ -171,6 +176,7 @@ var ROW_PAD = 14;
 var PIECE_X = 150;
 var CORNER_R = 6;
 var TOP_PAD = 40; // extra room at the top for the year header row
+var PHONE_TOP_PAD = 20; // phone has no in-graph year axis to reserve room for
 var BOTTOM_PAD = 16;
 var PIECE_FONT_SIZE = 17; // matches the intro paragraph's body copy
 var DATE_FONT_SIZE = 12;
@@ -244,6 +250,12 @@ var openPieceId = null;
 var yearFilter = null; // when set, only pieces from this year show
 var expandedSnapshot = null; // what was open before the year picker took over, restored on clear
 
+// Phone's starting year: today's real year if the catalog has
+// anything in it, otherwise the closest earlier year, otherwise
+// whatever the earliest year in the data is.
+var CURRENT_REAL_YEAR = new Date().getFullYear();
+var phoneYear = CURRENT_REAL_YEAR; // reassigned right after GLOBAL_YEARS exists below
+
 function yearValue(y){
   var n = parseInt(y, 10);
   return isNaN(n) ? Infinity : n; // TBA / unknown sinks to the newest end
@@ -260,46 +272,100 @@ var GLOBAL_YEARS = pieces.map(function(p){ return yearValue(p.year); })
 var GLOBAL_RANK_BY_YEAR = {};
 GLOBAL_YEARS.forEach(function(yv, i){ GLOBAL_RANK_BY_YEAR[yv] = i; });
 
-function piecesFor(familyId){
+(function resolvePhoneYear(){
+  var finiteYears = GLOBAL_YEARS.filter(function(y){ return isFinite(y); });
+  if (finiteYears.indexOf(CURRENT_REAL_YEAR) !== -1) { phoneYear = CURRENT_REAL_YEAR; return; }
+  var closestBelow = finiteYears.reduce(function(best, y){
+    return (y <= CURRENT_REAL_YEAR && (best === null || y > best)) ? y : best;
+  }, null);
+  phoneYear = closestBelow !== null ? closestBelow : (finiteYears.length ? finiteYears[0] : GLOBAL_YEARS[0]);
+})();
+
+function piecesFor(familyId, expandedMap){
   // A piece belongs to the first family in ITS OWN link order that's
   // currently open — stable regardless of click order, and each
   // piece only ever occupies one row, never duplicated. Sorted oldest
   // first, so chronology reads top-to-bottom (and, via the x stagger
   // below, left-to-right) within the row.
   return pieces.filter(function(p){
-    return p.links[0] === familyId ? expanded[familyId] :
-      p.links.indexOf(familyId) !== -1 && expanded[familyId] &&
-      p.links.filter(function(fid){ return expanded[fid]; })[0] === familyId;
+    return p.links[0] === familyId ? expandedMap[familyId] :
+      p.links.indexOf(familyId) !== -1 && expandedMap[familyId] &&
+      p.links.filter(function(fid){ return expandedMap[fid]; })[0] === familyId;
   }).sort(function(a, b){ return yearValue(a.year) - yearValue(b.year); });
 }
 
-function computeLayout(){
-  var phone = isPhoneWidth();
+// ---------- phone year-switcher mode ----------
+// On phone the graph is no longer freely expandable — instead the
+// person steps through one year at a time (arrows either side of a
+// centered year label). Every family that has at least one piece
+// that year is shown already "open" with its pieces listed; families
+// that are only a secondary link for that year's pieces show as a
+// plain closed dot (an anchor for the dotted connecting line) instead
+// of an empty open row. Families with nothing at all that year are
+// skipped entirely, which is what keeps the phone graph short.
+function piecesForYear(yv){
+  return pieces.filter(function(p){ return yearValue(p.year) === yv; });
+}
+function relevantFamiliesForYear(yv){
+  return families.filter(function(f){
+    return piecesForYear(yv).some(function(p){ return p.links.indexOf(f.id) !== -1; });
+  });
+}
+function primaryFamilyMapForYear(yv){
+  var map = {};
+  piecesForYear(yv).forEach(function(p){ map[p.links[0]] = true; });
+  return map;
+}
+
+// currentState() is read fresh at the top of every render(), so
+// desktop's own expanded/yearFilter state is never touched or
+// overwritten by phone mode, and switching between the two at a
+// resize boundary just picks a different view of the same data.
+function currentState(){
+  if (isPhoneWidth()) {
+    return {
+      phone: true,
+      locked: true,
+      familiesList: relevantFamiliesForYear(phoneYear),
+      expandedMap: primaryFamilyMapForYear(phoneYear),
+      yearFilterVal: phoneYear
+    };
+  }
+  return {
+    phone: false,
+    locked: false,
+    familiesList: families,
+    expandedMap: expanded,
+    yearFilterVal: yearFilter
+  };
+}
+
+function computeLayout(state){
+  var phone = state.phone;
   var unit = phone ? UNIT_PHONE : UNIT_DESKTOP;
   STAGGER_X = unit;
   INITIAL_LINE_LEN = unit;
   LANE_STEP = unit;
 
-  // On phone, once a year is picked, every visible piece shares one
-  // fixed column no matter which year — so switching years doesn't
-  // shift anything horizontally, and the graph never needs more room
-  // than that single column already fits in. The axis buttons above
-  // still sit at their real chronological x (see axisYears below) so
-  // the header still reads as a timeline; only the pieces themselves
-  // stop moving. Desktop keeps true per-year columns.
-  var lockToOneColumn = yearFilter !== null && phone;
+  // On phone, every visible piece shares one fixed column no matter
+  // which year is picked — so switching years doesn't shift anything
+  // horizontally, and the graph never needs more room than that
+  // single column already fits in. Desktop keeps true per-year
+  // columns (with its own optional year-axis filter, unaffected).
+  var lockToOneColumn = state.yearFilterVal !== null && phone;
   var containerW = contentWidth();
+  var topPad = phone ? PHONE_TOP_PAD : TOP_PAD;
 
-  var y = TOP_PAD;
+  var y = topPad;
   var rows = [];
   var secondaryFamilyIds = {}; // closed families a visible piece also links to
 
-  families.forEach(function(f){
-    var isOpen = !!expanded[f.id];
-    var kids = isOpen ? piecesFor(f.id) : [];
-    if (yearFilter !== null) kids = kids.filter(function(p){ return yearValue(p.year) === yearFilter; });
+  state.familiesList.forEach(function(f){
+    var isOpen = !!state.expandedMap[f.id];
+    var kids = isOpen ? piecesFor(f.id, state.expandedMap) : [];
+    if (state.yearFilterVal !== null) kids = kids.filter(function(p){ return yearValue(p.year) === state.yearFilterVal; });
     kids.forEach(function(p){
-      p.links.forEach(function(fid){ if (fid !== f.id && !expanded[fid]) secondaryFamilyIds[fid] = true; });
+      p.links.forEach(function(fid){ if (fid !== f.id && !state.expandedMap[fid]) secondaryFamilyIds[fid] = true; });
 
       // x doesn't depend on row position, so it's safe to assign here,
       // before row heights (which now depend on wrapped label height,
@@ -324,7 +390,12 @@ function computeLayout(){
     y += rowH;
   });
 
-  var axisYears = GLOBAL_YEARS.map(function(yv){
+  // The in-graph clickable year axis is a desktop-only affordance —
+  // on phone the year-switcher above the graph replaces it, and
+  // skipping it here is also what lets the phone graph start higher
+  // up (see PHONE_TOP_PAD) instead of reserving header space for a
+  // row that's never drawn.
+  var axisYears = phone ? [] : GLOBAL_YEARS.map(function(yv){
     return { yv: yv, label: (yv === Infinity ? 'TBA' : String(yv)), x: PIECE_X + GLOBAL_RANK_BY_YEAR[yv] * STAGGER_X };
   });
 
@@ -500,7 +571,8 @@ function pickYear(yv){
 }
 
 function render(){
-  var layout = computeLayout();
+  var state = currentState();
+  var layout = computeLayout(state);
   treeContent.innerHTML = '';
 
   var containerWidth = contentWidth();
@@ -542,7 +614,7 @@ function render(){
     var f = row.family;
     var g = document.createElementNS(NS, 'g');
     g.setAttribute('class', 'family-row' + (row.isOpen ? ' expanded' : '') + (row.secondary ? ' secondary' : ''));
-    g.style.cursor = 'pointer';
+    g.style.cursor = state.locked ? 'default' : 'pointer';
 
     var circle = document.createElementNS(NS, 'circle');
     circle.setAttribute('cx', SPINE_X); circle.setAttribute('cy', row.centerY); circle.setAttribute('r', FAMILY_R);
@@ -565,7 +637,9 @@ function render(){
     }
     g.appendChild(label);
 
-    g.addEventListener('click', function(){ toggleFamily(f.id); });
+    if (!state.locked) {
+      g.addEventListener('click', function(){ toggleFamily(f.id); });
+    }
 
     row.kids.forEach(function(p){
       var path = document.createElementNS(NS, 'path');
@@ -732,6 +806,32 @@ function render(){
     treeContent.insertBefore(path, treeContent.firstChild);
   });
 }
+
+var yearPrevBtn = document.getElementById('year-prev');
+var yearNextBtn = document.getElementById('year-next');
+var yearSwitcherLabel = document.getElementById('year-switcher-label');
+
+function updateYearSwitcher(){
+  yearSwitcherLabel.textContent = phoneYear === Infinity ? 'TBA' : String(phoneYear);
+  var idx = GLOBAL_YEARS.indexOf(phoneYear);
+  yearPrevBtn.disabled = idx <= 0;
+  yearNextBtn.disabled = idx >= GLOBAL_YEARS.length - 1;
+}
+yearPrevBtn.addEventListener('click', function(){
+  var idx = GLOBAL_YEARS.indexOf(phoneYear);
+  if (idx <= 0) return;
+  phoneYear = GLOBAL_YEARS[idx - 1];
+  updateYearSwitcher();
+  render();
+});
+yearNextBtn.addEventListener('click', function(){
+  var idx = GLOBAL_YEARS.indexOf(phoneYear);
+  if (idx === -1 || idx >= GLOBAL_YEARS.length - 1) return;
+  phoneYear = GLOBAL_YEARS[idx + 1];
+  updateYearSwitcher();
+  render();
+});
+updateYearSwitcher();
 
 render();
 var resizeTimer;

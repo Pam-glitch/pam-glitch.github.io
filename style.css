@@ -518,3 +518,48 @@ footer p {
   margin-right: 8px;
   vertical-align: middle;
 }
+
+/* --- phone year switcher: hidden on desktop (the in-graph year axis
+   still handles that), shown above the graph on phone as the primary
+   way to move through the catalog one year at a time. --- */
+.year-switcher {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin: 4px 0 22px;
+}
+
+.year-switcher-label {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  min-width: 70px;
+  text-align: center;
+  color: var(--ink);
+}
+
+.year-switcher-btn {
+  background: none;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+}
+
+.year-switcher-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+@media (max-width: 899px) {
+  .year-switcher {
+    display: flex;
+  }
+}
