@@ -121,12 +121,33 @@ var pieces = [
       {src:'images/work/fittykatta-2.jpg', alt:'Event poster for FiTTyKATTA! Liberation is Erotic, 11 April 2026 at Boksen, Hausmania'}
     ],
     panelHtml:'<h3>FiTTyKATTA! Liberation is Erotic</h3>' +
-      '<p class="meta">2026 — Boksen Noise, Oslo</p>' +
-      '<p>Curator &amp; co-artist, with Vincenzo Madaghiele and Maria Gabriela Rubio, as part of the collective Perre alla Diavola.</p>' +
+      '<p class="meta">11 April 2026 — Boksen Noise, Hausmania, Oslo</p>' +
+      '<p class="meta"><em>Moans, bodies, language, breath, rhythm, repetition, voice.</em></p>' +
+      '<p><strong>No pictures allowed during the event.</strong></p>' +
+      '<p>FiTTyKATTA! is a showcase of creative approaches to the struggle of liberation. This evening included experimental performances by emerging and established artists, focused around feminist ideas of liberation, bodily autonomy and freedom of expression.</p>' +
+      '<p>We asked people to do what they otherwise would not have done in other rooms — institutionalised rooms, culturally founded rooms, "serious" rooms. What happens when an artist can mold with the sensual and the erotic, without having to explain themselves, without relating to established structures of power?</p>' +
+      '<p>The erotic sphere is not isolated. The erotic within is not easily accessible in times of war and oppression — it is a fundamental part of our identities and all sides of life. Performing with sounds and bodies, we talk about power and sexuality, voices in liberation, playing to celebrate diverse human connections, experimentation and play.</p>' +
+      '<p class="meta">Curator &amp; co-artist, with Vincenzo Madaghiele and Maria Gabriela Rubio, as part of the collective Perre alla Diavola.</p>' +
+      '<p class="meta">Artists</p>' +
+      '<p>' +
+      'Adam A. Pambianchi<br>' +
+      '<a href="https://www.mariagabrielarubio.com" target="_blank" rel="noopener">Maria Gabriela Rubio</a><br>' +
+      '<a href="https://www.hf.uio.no/imv/english/people/aca/temporary/vincemad/" target="_blank" rel="noopener">Vincenzo Madaghiele</a><br>' +
+      '<a href="https://www.taraabdullah.com" target="_blank" rel="noopener">Tara Abdullah</a><br>' +
+      '<a href="http://pouyapouramin.online" target="_blank" rel="noopener">Puoya Pour-Amin</a><br>' +
+      '<a href="https://skjaere.no/" target="_blank" rel="noopener">Sam+Skjære</a><br>' +
+      '<a href="https://www.eirinderhaug.no" target="_blank" rel="noopener">Eir Inderhaug</a><br>' +
+      '<a href="https://linktr.ee/tuulasharma" target="_blank" rel="noopener">Tuula Sharma Vassvik</a><br>' +
+      '<a href="https://www.ingridfrivold.com" target="_blank" rel="noopener">FRVLDZ</a>' +
+      '</p>' +
       '<p class="meta">Covered by <a href="https://www.sagat.no" target="_blank" rel="noopener">Sagat</a>, a Sámi newspaper<br>' +
       'Journalist: Sunniva Katrine Bornøy<br>' +
-      'Photographer: Andreas Sætre</p>'},
-  {id:'p20', label:'Workshop & concert with OFO', links:['orchestra'], year:'2027', forr:'orchestra', where:'Oslo Philharmonic, 5 May 2027'}
+      'Photographer: Andreas Sætre</p>' +
+      '<p><a href="https://www.instagram.com/boksennoise/?hl=en" target="_blank" rel="noopener">Boksen Noise, Hausmania</a></p>'},
+  {id:'p20', label:'Workshop & concert with OFO', links:['orchestra'], year:'2027', forr:'orchestra', where:'Oslo Philharmonic, 5 May 2027'},
+  {id:'p21', label:'Circuito Continuo', links:['strings'], year:'2026', forr:'string quartet',
+    performers:[{name:'Jack Quartet', url:'https://www.jackquartet.com'}],
+    where:'Festival Academy at the Only Connect Festival, Oslo — 26 April 2026 — <a href="https://www.onlyconnect.no" target="_blank" rel="noopener">onlyconnect.no</a>'}
 ];
 
 var nodeById = {};
@@ -353,6 +374,14 @@ function openPanel(piece){
     textHtml += '<h3>' + (piece.fullLabel || piece.label) + '</h3>';
     textHtml += '<p class="meta">' + piece.year + '</p>';
     textHtml += '<p>' + piece.forr + '</p>';
+    if (piece.performers && piece.performers.length) {
+      textHtml += '<p class="meta">Performers</p>';
+      textHtml += '<p>' + piece.performers.map(function(person){
+        return person.url
+          ? '<a href="' + person.url + '" target="_blank" rel="noopener">' + person.name + '</a>'
+          : person.name;
+      }).join('<br>') + '</p>';
+    }
     textHtml += '<p class="meta">' + piece.where + '</p>';
   }
   panelContent.innerHTML = textHtml;

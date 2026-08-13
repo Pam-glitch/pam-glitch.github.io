@@ -383,7 +383,9 @@ footer p {
 }
 
 /* Piece panel: full-width and stacked (text, then image) on phones —
-   a fixed 680×680 square, side by side, on wider screens */
+   wider, side by side, on wider screens. Height is auto (not a fixed
+   square) so text always has room to wrap down instead of scrolling
+   internally. */
 .piece-panel {
   display: none;
   width: 100%;
@@ -403,11 +405,16 @@ footer p {
 
 @media (min-width: 900px) {
   .piece-panel {
-    height: 680px;
+    /* Same margin the graph borrows from (.grow-right), but uncapped —
+       the graph deliberately stays modest at ultra-wide widths, but
+       the piece panel (mainly its images) should use all of it. */
+    width: calc(var(--width) + (100vw - 40px - var(--width)) / 2);
+    max-width: none;
   }
   .piece-panel.open {
     flex-direction: row;
     gap: 24px;
+    align-items: flex-start;
   }
 }
 
@@ -443,13 +450,12 @@ footer p {
 @media (min-width: 900px) {
   .panel-images-col {
     flex: none;
-    width: 200px;
-    overflow-y: auto;
+    width: 38%; /* was a fixed 200px — this is the actual size fix */
+    max-width: 480px;
   }
   .panel-text-col {
     flex: 1;
     min-width: 0;
-    overflow-y: auto;
   }
 }
 
