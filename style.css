@@ -319,30 +319,20 @@ footer p {
   opacity: 1;
 }
 
-/* Family rows: just a colour dot. On desktop the name only appears on
-   hover or once the family is tapped open, so the graph stays compact.
-   On phone there's no hover, so the name is always visible — the JS
-   already swaps full label (closed) for the short one (open). */
+/* Family rows: colour dot + name, always visible — name is always
+   shown in full, never abbreviated, whether the row is open or
+   closed. Hovering a family that ISN'T open yet underlines its name
+   to signal it's clickable; once it's open that affordance goes away
+   since there's nothing left to invite a click toward. */
 .family-row .f-label,
 .family-node .f-label {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
-}
-
-.family-row:hover .f-label,
-.family-row.expanded .f-label,
-.family-node:hover .f-label,
-.family-node.expanded .f-label {
   opacity: 1;
 }
 
-@media (max-width: 899px) {
-  .family-row .f-label,
-  .family-node .f-label {
-    opacity: 1;
-    pointer-events: auto;
-  }
+.family-row:not(.expanded):hover .f-label,
+.family-node:not(.expanded):hover .f-label {
+  text-decoration: underline;
+  text-decoration-color: #000000;
 }
 
 .piece-node text,
@@ -479,12 +469,17 @@ footer p {
 .map-list summary {
   padding: 14px 0;
   font-family: "Courier New", Courier, monospace;
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: 0.5px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 10px;
+  list-style: none;
+}
+
+.map-list summary::-webkit-details-marker {
+  display: none;
 }
 
 .map-list .family-dot {
@@ -493,6 +488,19 @@ footer p {
   height: 12px;
   border-radius: 50%;
   flex: none;
+}
+
+.map-list .family-arrow {
+  display: inline-block;
+  flex: none;
+  font-size: 11px;
+  color: var(--ink);
+  opacity: 0.6;
+  transition: transform 0.15s ease;
+}
+
+.map-list details[open] .family-arrow {
+  transform: rotate(90deg);
 }
 
 .map-list ul.recent li {

@@ -256,37 +256,26 @@ var FAMILY_LABEL_FONT = '"Courier New", Courier, monospace';
 
 // Ratio system: three distances that used to be separate magic
 // numbers — the gap between year columns, the length of the straight
-// stretch next to a family dot (where its name sits once expanded),
-// and the gap between parallel dotted secondary-links — are now all
-// driven off ONE unit, so the whole graph reads as consistently
-// spaced. The unit itself comes from the widest family name that
-// ISN'T abbreviated (winds/brass/keys/voice/strings/collabs) at the
-// font it's actually drawn in, plus a little padding — abbreviated
-// names (perc., elect., orch. & ens., interd.) are always shorter,
-// so they fit comfortably within a unit sized for the longest one
-// that stays full-length.
-var UNCHANGED_FAMILY_IDS = ['winds', 'brass', 'keys', 'voice', 'strings', 'collabs'];
+// stretch next to a family dot (where its name sits), and the gap
+// between parallel dotted secondary-links — are all driven off ONE
+// unit, so the whole graph reads as consistently spaced. Family names
+// are always shown in full (never abbreviated), so the unit is sized
+// to the widest full family name at the font it's actually drawn in,
+// plus a little padding.
 function measureLabelWidth(text, fontPx, fontFamily){
   var c = measureLabelWidth._canvas || (measureLabelWidth._canvas = document.createElement('canvas'));
   var ctx = c.getContext('2d');
   ctx.font = fontPx + 'px ' + fontFamily;
   return ctx.measureText(text).width;
 }
-var longestUnchangedWidth = Math.max.apply(null, UNCHANGED_FAMILY_IDS.map(function(id){
-  var f = families.filter(function(x){ return x.id === id; })[0];
+var longestFullWidth = Math.max.apply(null, families.map(function(f){
   return measureLabelWidth(f.label, FAMILY_LABEL_FONT_SIZE, FAMILY_LABEL_FONT);
 }));
-var UNIT_DESKTOP = Math.ceil(longestUnchangedWidth) + 16; // + padding so text never touches the bend
+var UNIT_DESKTOP = Math.ceil(longestFullWidth) + 16; // + padding so text never touches the bend
 
-// Phone gets its own, tighter unit: since every family shows its
-// SHORT label when open (on phone as well as desktop, per the
-// always-visible-name change below), the space that actually needs
-// reserving on phone is sized to the widest short label, not the
-// widest full one — real measurement, just a smaller basis.
-var longestShortWidth = Math.max.apply(null, families.map(function(f){
-  return measureLabelWidth(f.shortLabel, FAMILY_LABEL_FONT_SIZE, FAMILY_LABEL_FONT);
-}));
-var UNIT_PHONE = Math.ceil(longestShortWidth) + 10;
+// Phone uses the same full-label basis, just a touch tighter since
+// screen space is scarcer there.
+var UNIT_PHONE = Math.ceil(longestFullWidth) + 10;
 
 // These three get reassigned at the top of every render() (desktop
 // vs phone unit) rather than fixed once at load.
@@ -317,6 +306,11 @@ function wrapLabelLines(text, maxWidth, fontPx, fontFamily){
 
 var openPieceId = null;
 
+// Desktop: families start closed (just the dot + full name) and open
+// on click to reveal their pieces — "opening the root" of that branch.
+// Phone doesn't use this; it has its own always-open-per-year logic.
+var expanded = {};
+
 // Phone's starting year: today's real year if the catalog has
 // anything in it, otherwise the closest earlier year, otherwise
 // whatever the earliest year in the data is.
@@ -345,13 +339,6 @@ GLOBAL_YEARS.forEach(function(yv, i){ GLOBAL_RANK_BY_YEAR[yv] = i; });
   }, null);
   phoneYear = closestBelow !== null ? closestBelow : (finiteYears.length ? finiteYears[0] : GLOBAL_YEARS[0]);
 })();
-
-// Desktop no longer has an expand/collapse concept — every family is
-// always "open" so every name and every piece stays visible at once.
-// The year axis at the top is purely a chronology label now, not a
-// filter: it never changes what's shown.
-var ALL_FAMILIES_OPEN = {};
-families.forEach(function(f){ ALL_FAMILIES_OPEN[f.id] = true; });
 
 function piecesFor(familyId, expandedMap){
   // A piece belongs to the first family in ITS OWN link order that's
@@ -389,9 +376,9 @@ function primaryFamilyMapForYear(yv){
 }
 
 // currentState() is read fresh at the top of every render(). Desktop
-// always shows the full catalog (every family, every piece, every
-// year, positioned along the chronology); phone still narrows to one
-// year at a time so the graph fits a small screen.
+// shows every family's name and dot at all times, but only shows a
+// family's pieces once it's been clicked open; phone still narrows to
+// one year at a time so the graph fits a small screen.
 function currentState(){
   if (isPhoneWidth()) {
     return {
@@ -404,7 +391,7 @@ function currentState(){
   return {
     phone: false,
     familiesList: families,
-    expandedMap: ALL_FAMILIES_OPEN,
+    expandedMap: expanded,
     yearFilterVal: null
   };
 }
@@ -534,8 +521,9 @@ function secondaryLinkPath(familyY, pieceY, pieceX, laneX){
     ' L' + famX + ',' + famEntryY;
 }
 
-function shortFamilyLabel(family){
-  return family.shortLabel;
+function toggleFamily(id){
+  expanded[id] = !expanded[id];
+  render();
 }
 
 var svg = document.getElementById('tree');
@@ -648,6 +636,7 @@ function render(){
     var f = row.family;
     var g = document.createElementNS(NS, 'g');
     g.setAttribute('class', 'family-row' + (row.isOpen ? ' expanded' : '') + (row.secondary ? ' secondary' : ''));
+    g.style.cursor = state.phone ? 'default' : 'pointer';
 
     var circle = document.createElementNS(NS, 'circle');
     circle.setAttribute('cx', SPINE_X); circle.setAttribute('cy', row.centerY); circle.setAttribute('r', FAMILY_R);
@@ -655,7 +644,7 @@ function render(){
     g.appendChild(circle);
 
     var label = document.createElementNS(NS, 'text');
-    label.textContent = row.isOpen ? shortFamilyLabel(f) : f.label;
+    label.textContent = f.label;
     label.setAttribute('class', 'f-label');
     label.setAttribute('x', SPINE_X - FAMILY_R);
     label.setAttribute('y', row.centerY - FAMILY_R - 7);
@@ -663,12 +652,11 @@ function render(){
     label.setAttribute('font-family', 'Courier New, Courier, monospace');
     label.setAttribute('font-size', '13');
     label.setAttribute('fill', '#000000');
-    if (row.isOpen) {
-      var labelTitle = document.createElementNS(NS, 'title');
-      labelTitle.textContent = f.label;
-      label.appendChild(labelTitle);
-    }
     g.appendChild(label);
+
+    if (!state.phone) {
+      g.addEventListener('click', function(){ toggleFamily(f.id); });
+    }
 
     row.kids.forEach(function(p){
       var path = document.createElementNS(NS, 'path');
@@ -859,23 +847,14 @@ window.addEventListener('resize', function(){
 // chronologic view above, so a new piece only ever needs adding in one
 // place. Grouped by family, in the same fixed order as the graph, and
 // each family header uses the same visual language — a colored dot
-// plus the plain family name — instead of a boxed, bordered summary.
-function pieceMetaLine(p){
-  if (p.note) return p.note;
-  var parts = [];
-  if (p.forr) parts.push(p.forr);
-  if (p.where) parts.push(p.where);
-  return parts.join(' — ');
-}
-
+// plus the plain family name. Pieces show only their title here; full
+// details (performers, venue, links) only ever live in the piece
+// panel, opened by clicking — no repeating the same info twice.
 function pieceListItem(p, withDot){
   var dot = withDot
     ? '<span class="piece-dot" style="background-color:' + nodeById[p.links[0]].color + '"></span>'
     : '';
-  var meta = pieceMetaLine(p);
-  return '<li class="li-piece" data-piece-id="' + p.id + '" tabindex="0" role="button">' + dot + (p.fullLabel || p.label) +
-    (meta ? '<br><span class="meta">' + meta + '</span>' : '') +
-    '</li>';
+  return '<li class="li-piece" data-piece-id="' + p.id + '" tabindex="0" role="button">' + dot + (p.fullLabel || p.label) + '</li>';
 }
 
 function renderListByFamily(){
@@ -884,7 +863,11 @@ function renderListByFamily(){
     var members = pieces.filter(function(p){ return p.links.indexOf(f.id) !== -1; });
     if (!members.length) return;
     html += '<details open>' +
-      '<summary><span class="family-dot" style="background-color:' + f.color + '"></span>' + f.label + '</summary>' +
+      '<summary>' +
+        '<span class="family-dot" style="background-color:' + f.color + '"></span>' +
+        '<span class="family-arrow" aria-hidden="true">&#9656;</span>' +
+        '<span class="family-name">' + f.label + '</span>' +
+      '</summary>' +
       '<ul class="recent">' + members.map(function(p){ return pieceListItem(p, false); }).join('') + '</ul>' +
       '</details>';
   });
