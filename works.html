@@ -19,10 +19,10 @@
 
   <main>
     <h2>works</h2>
-    <p>Click a family to expand it, then click a piece for details. Switch to a simple list any time.</p>
+    <p>Click a piece for details. Switch between the chronologic view and the full catalogue any time.</p>
 
     <div class="view-toggle">
-      <button type="button" id="show-graph" class="view-toggle-btn active">graph</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">list</button>
+      <button type="button" id="show-graph" class="view-toggle-btn active">chronologic</button><span class="sep">|</span><button type="button" id="show-list" class="view-toggle-btn">catalogue</button>
     </div>
 
     <div class="map-graph grow-right" id="map-graph-view">
@@ -32,7 +32,7 @@
         <button type="button" id="year-next" class="year-switcher-btn" aria-label="Next year">&rsaquo;</button>
       </div>
       <div class="tree-wrap" id="tree-wrap">
-        <svg id="tree" width="100%" height="100%" role="img" aria-label="Family tree of works, click a family to expand it">
+        <svg id="tree" width="100%" height="100%" role="img" aria-label="Chronologic tree of works, click a piece for details">
           <g id="tree-content"></g>
         </svg>
       </div>
@@ -93,19 +93,55 @@ var families = [
 
 var pieces = [
   {id:'p1', label:'Wind Quintet', links:['winds'], year:'2026', forr:'wind quintet', where:'Kammermusikkveka 2026, Norwegian Academy of Music'},
-  {id:'p2', label:'Sax solo', fullLabel:'Solo piece for Saxophone', links:['winds'], year:'2026', forr:'saxophone (Gudrun Faleide Fristad)', where:'Premiere 7 Aug; touring La Plata, Ushuaia, Cajamarca from 24 Aug'},
-  {id:'p3', label:'Erbe Selvatiche', links:['winds'], year:'2026', forr:'bass clarinet (Madara Elena Mezale)', where:'Norwegian Academy of Music, 24 March'},
-  {id:'p4', label:'Corpo', links:['winds','electronics'], year:'2025', forr:'electroacoustic, ambisonics (w/ saxophonist Gregory Karanekha)', where:'Laidi Palace, Latvia'},
-  {id:'p5', label:'Album (2026)', links:['collabs'], year:'2026', forr:'accordion (Kalle Moberg), saxophone (Mario Gabola), vocals', where:'Label: <a href="https://dissipatio.bandcamp.com" target="_blank" rel="noopener">Dissipatio</a> (IT), September 2026'},
+  {id:'p2', label:'In Apnea', links:['winds'], year:'2026', forr:'alto saxophone and flexible PVC tubes (Gudrun Faleide Fristad)', where:'Premiere 7 Aug, Sagene Kunstsmie, Oslo; touring La Plata, Ushuaia, Cajamarca, Aug 2026',
+    panelHtml:'<h3>In Apnea</h3>' +
+      '<p class="meta">2026 — <a href="https://www.sagenekunstsmie.no" target="_blank" rel="noopener">Sagene Kunstsmie</a>, Oslo</p>' +
+      '<p>Alto saxophone and flexible PVC tubes</p>' +
+      '<p class="meta">Performers</p>' +
+      '<p><a href="https://www.gudrunfaleidefristad.no" target="_blank" rel="noopener">Gudrun Faleide Fristad</a></p>' +
+      '<p class="meta">Premiere 7 August 2026<br>' +
+      'Touring August 2026: La Plata, Ushuaia, Cajamarca</p>'},
+  {id:'p3', label:'Erbe Selvatiche', links:['winds'], year:'2026', forr:'bass clarinet (Madara Elena Mezale)', where:'Norwegian Academy of Music, 24 March',
+    panelHtml:'<h3>Erbe Selvatiche</h3>' +
+      '<p class="meta">2026 — Norwegian Academy of Music, 24 March</p>' +
+      '<p>Bass clarinet</p>' +
+      '<p class="meta">Performers</p>' +
+      '<p><a href="https://www.arepoensemble.com/madara-e-mezale" target="_blank" rel="noopener">Madara Elena Mezale</a></p>'},
+  {id:'p4', label:'Corpo', links:['winds','electronics'], year:'2025', forr:'electroacoustic, ambisonics (w/ saxophonist Gregory Karanekha)', where:'Laidi Palace, Latvia',
+    panelHtml:'<h3>Corpo</h3>' +
+      '<p class="meta">2025 — Laidi Palace, Latvia</p>' +
+      '<p>Electroacoustic, ambisonics</p>' +
+      '<p class="meta">Performers</p>' +
+      '<p>Saxophone: <a href="https://gregorymusicdotcomdomainonly.wordpress.com" target="_blank" rel="noopener">Gregory Karanekha</a></p>' +
+      '<p class="meta">Residency: <a href="https://www.dda.lv" target="_blank" rel="noopener">DDA</a></p>'},
+  {id:'p5', label:'Album (2026)', links:['collabs'], year:'2026', forr:'accordion (Kalle Moberg), saxophone (Mario Gabola), vocals', where:'Label: <a href="https://dissipatio.bandcamp.com" target="_blank" rel="noopener">Dissipatio</a> (IT), September 2026',
+    panelHtml:'<h3>Album (2026)</h3>' +
+      '<p class="meta">2026 — Label: <a href="https://dissipatio.bandcamp.com" target="_blank" rel="noopener">Dissipatio</a> (IT), September 2026</p>' +
+      '<p>Accordion, saxophone, vocals</p>' +
+      '<p class="meta">Performers</p>' +
+      '<p><a href="https://www.kallemoberg.com" target="_blank" rel="noopener">Kalle Moberg</a>, accordion<br>' +
+      '<a href="https://noideafestival.com/people/mario-gabola" target="_blank" rel="noopener">Mario Gabola</a>, saxophone<br>' +
+      'Adam A.Ø. Pambianchi, vocals</p>'},
   {id:'p6', label:'Trombone solo', fullLabel:'Solo piece for Trombone', links:['brass'], year:'TBA', forr:'trombone (Guro Kitterød)', where:'TBA'},
-  {id:'p7', label:'Richiamo', links:['brass','percussion','electronics'], year:'2025', forr:'trombone, tam-tam, transducer (Guro Kitterød)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
+  {id:'p7', label:'Richiamo', links:['brass','percussion','electronics'], year:'2025', forr:'trombone, tam-tam, transducer (Guro Kitterød)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie',
+    panelHtml:'<h3>Richiamo</h3>' +
+      '<p class="meta">2025 — Sonisk Hage Festival, Galleri Sagene Kunstsmie</p>' +
+      '<p>Trombone, tam-tam, transducer</p>' +
+      '<p class="meta">Performers</p>' +
+      '<p><a href="https://www.instagram.com/guro.kitterod/" target="_blank" rel="noopener">Guro Kitterød</a></p>'},
   {id:'p8', label:"We're Not Really Strangers", links:['strings','keys'], year:'2026', forr:'cello, two pianos', where:'Norwegian Academy of Music, 16 March'},
-  {id:'p9', label:'Opera', links:['percussion'], year:'2025', forr:'percussion duo (Lillekontoret)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
-  {id:'p10', label:'Tachysensia', links:['electronics'], year:'2025', forr:'speakers & phones', where:'Notam, Sonisk Hage Festival'},
+  {id:'p9', label:'Opera', links:['percussion'], year:'2025', forr:'percussion duo (Lillekontoret)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie',
+    panelHtml:'<h3>Opera</h3>' +
+      '<p class="meta">2025 — Sonisk Hage Festival, Galleri Sagene Kunstsmie</p>' +
+      '<p>Percussion duo</p>' +
+      '<p class="meta">Performers</p>' +
+      '<p><a href="https://www.instagram.com/lillekontoret/" target="_blank" rel="noopener">Lillekontoret</a></p>'},
+  {id:'p10', label:'Tachysensia', links:['electronics'], year:'2025', forr:'speakers & phones', where:'Notam, Sonisk Hage Festival',
+    panelHtml:'<h3>Tachysensia</h3>' +
+      '<p class="meta">2025 — <a href="https://notam.no" target="_blank" rel="noopener">Notam</a>, Sonisk Hage Festival</p>' +
+      '<p>Speakers &amp; phones</p>'},
   {id:'p11', label:'In Acqua', links:['voice'], year:'2023', forr:'mixed choir, 8 voices (SSAATTBB)', where:'deciBels Contemporary Music Festival, Riga',
     images:[
-      {src:'images/work/in-acqua-poem-it.png', alt:'Poem "In Acqua" by Adam A.Ø. Pambianchi, Italian text, dedicated to migrants who never reached Lampedusa'},
-      {src:'images/work/in-acqua-poem-en.png', alt:'Poem "In Acqua" by Adam A.Ø. Pambianchi, English translation'},
       {src:'images/work/in-acqua-photo-1.jpg', alt:'Backstage after the performance of In Acqua, with JVLMA Jauktais Koris and conductor Jēkabs Bernāts, Riga'},
       {src:'images/work/in-acqua-photo-2.jpg', alt:'JVLMA Jauktais Koris performing In Acqua at the deciBels Contemporary Music Festival, Riga'}
     ],
@@ -117,12 +153,33 @@ var pieces = [
       'Conductor: <a href="https://bernats.lv" target="_blank" rel="noopener">Jēkabs Bernāts</a></p>' +
       '<p class="meta"><em>For those migrants who, for the love of life, faced the salty waters but never reached Lampedusa.</em></p>' +
       '<p><a href="https://www.jvlma.lv/kalendars/10jvlma-musdienu-muzikas-festivals-decibels-vitrina" target="_blank" rel="noopener">deciBels Festival programme</a></p>'},
-  {id:'p12', label:'By the Grave of the Unknown Queer', links:['orchestra'], year:'2026', forr:'orchestra', where:'Trondheim Symphony Orchestra — workshops Jan & May'},
-  {id:'p13', label:'Il Mio, Il Tuo Corpo', links:['interdisciplinary'], year:'2025', forr:'interdisciplinary', where:'<a href="https://apartefestival.no/Aurora-Maria-Ovrelid-Pambianchi" target="_blank" rel="noopener">Aparte Festival</a>, Vestfold Kunstsenter'},
-  {id:'p14', label:'1st Draft: First Lady', links:['interdisciplinary'], year:'2025', forr:'Duo Amoeba', where:'Blitz, Oslo'},
+  {id:'p12', label:'By the Grave of the Unknown Queer', links:['orchestra'], year:'2026', forr:'orchestra', where:'Trondheim Symphony Orchestra — workshops Jan & May',
+    panelHtml:'<h3>By the Grave of the Unknown Queer</h3>' +
+      '<p class="meta">2026 — <a href="https://www.tso.no" target="_blank" rel="noopener">Trondheim Symphony Orchestra</a> — workshops Jan &amp; May</p>' +
+      '<p>Orchestra</p>' +
+      '<p class="meta">Dedicated to <a href="https://no.wikipedia.org/wiki/Esben_Esther_Pirelli_Benestad" target="_blank" rel="noopener">Esben Esther Pirelli Benestad</a></p>'},
+  {id:'p13', label:'Il Mio, Il Tuo Corpo', links:['interdisciplinary'], year:'2025', forr:'interdisciplinary', where:'<a href="https://apartefestival.no/Aurora-Maria-Ovrelid-Pambianchi" target="_blank" rel="noopener">Aparte Festival</a>, Vestfold Kunstsenter',
+    panelHtml:'<h3>Il Mio, Il Tuo Corpo</h3>' +
+      '<p class="meta">2025 — <a href="https://apartefestival.no/Aurora-Maria-Ovrelid-Pambianchi" target="_blank" rel="noopener">Aparte Festival</a>, <a href="https://www.vestfoldkunstsenter.no" target="_blank" rel="noopener">Vestfold Kunstsenter</a></p>' +
+      '<p>Interdisciplinary</p>'},
+  {id:'p14', label:'1st Draft: First Lady', links:['interdisciplinary'], year:'2025', forr:'Duo Amoeba', where:'Blitz, Oslo',
+    panelHtml:'<h3>1st Draft: First Lady</h3>' +
+      '<p class="meta">2025 — Blitz, Oslo</p>' +
+      '<p>Duo Amoeba</p>' +
+      '<p class="meta">Performers</p>' +
+      '<p><a href="https://www.noelrubli.com" target="_blank" rel="noopener">Noel Rubli</a><br>' +
+      '<a href="https://www.arepoensemble.com/marco-slaviero" target="_blank" rel="noopener">Marco Slaviero</a></p>'},
   {id:'p15', label:'Habitat', links:['interdisciplinary'], year:'2025', forr:'interdisciplinary performance', where:'Norwegian Academy of Music'},
-  {id:'p16', label:'Motore', links:['interdisciplinary'], year:'2024', forr:'collaborative graduation performance, Clothing & Costume', where:'Oslo National Academy of the Arts (KHiO)'},
-  {id:'p17', label:'Short Stories', links:['interdisciplinary'], year:'2024', forr:'interdisciplinary, w/ choreographer Anna Einemo Frøysland', where:'Technical Museum, Oslo'},
+  {id:'p16', label:'Motore', links:['interdisciplinary'], year:'2024', forr:'collaborative graduation performance, Clothing & Costume', where:'Oslo National Academy of the Arts (KHiO)',
+    panelHtml:'<h3>Motore</h3>' +
+      '<p class="meta">2024 — <a href="https://khio.no" target="_blank" rel="noopener">Oslo National Academy of the Arts (KHiO)</a></p>' +
+      '<p>Collaborative graduation performance, Clothing &amp; Costume</p>'},
+  {id:'p17', label:'Short Stories', links:['interdisciplinary'], year:'2024', forr:'interdisciplinary, w/ choreographer Anna Einemo Frøysland', where:'Technical Museum, Oslo',
+    panelHtml:'<h3>Short Stories</h3>' +
+      '<p class="meta">2024 — <a href="https://www.tekniskmuseum.no" target="_blank" rel="noopener">Technical Museum</a>, Oslo</p>' +
+      '<p>Interdisciplinary</p>' +
+      '<p class="meta">Performers</p>' +
+      '<p>Choreographer: <a href="http://www.annafroysland.com" target="_blank" rel="noopener">Anna Einemo Frøysland</a></p>'},
   {id:'p18', label:'Perre alla Diavola', links:['collabs'], year:'2026', note:'Collective with Maria Gabriela Rubio, Vincenzo Madaghiele & Robin Morabito', images:[],
     panelHtml:'<h3><u>Collective Perre alla Diavola</u></h3>' +
       '<p class="meta">Artists</p>' +
@@ -258,11 +315,7 @@ function wrapLabelLines(text, maxWidth, fontPx, fontFamily){
   return lines.length ? lines : [text];
 }
 
-var expanded = {};
-var openOrder = [];
 var openPieceId = null;
-var yearFilter = null; // when set, only pieces from this year show
-var expandedSnapshot = null; // what was open before the year picker took over, restored on clear
 
 // Phone's starting year: today's real year if the catalog has
 // anything in it, otherwise the closest earlier year, otherwise
@@ -277,9 +330,7 @@ function yearValue(y){
 
 // Column position reads as chronology across the WHOLE graph, so the
 // year-to-column mapping is global — built once from the entire
-// dataset, not from whatever happens to be open. That's what lets the
-// year picker offer every year immediately, before any family has
-// been expanded at all.
+// dataset.
 var GLOBAL_YEARS = pieces.map(function(p){ return yearValue(p.year); })
   .filter(function(yv, i, arr){ return arr.indexOf(yv) === i; })
   .sort(function(a, b){ return a - b; });
@@ -295,9 +346,16 @@ GLOBAL_YEARS.forEach(function(yv, i){ GLOBAL_RANK_BY_YEAR[yv] = i; });
   phoneYear = closestBelow !== null ? closestBelow : (finiteYears.length ? finiteYears[0] : GLOBAL_YEARS[0]);
 })();
 
+// Desktop no longer has an expand/collapse concept — every family is
+// always "open" so every name and every piece stays visible at once.
+// The year axis at the top is purely a chronology label now, not a
+// filter: it never changes what's shown.
+var ALL_FAMILIES_OPEN = {};
+families.forEach(function(f){ ALL_FAMILIES_OPEN[f.id] = true; });
+
 function piecesFor(familyId, expandedMap){
   // A piece belongs to the first family in ITS OWN link order that's
-  // currently open — stable regardless of click order, and each
+  // currently open — stable regardless of family order, and each
   // piece only ever occupies one row, never duplicated. Sorted oldest
   // first, so chronology reads top-to-bottom (and, via the x stagger
   // below, left-to-right) within the row.
@@ -309,10 +367,9 @@ function piecesFor(familyId, expandedMap){
 }
 
 // ---------- phone year-switcher mode ----------
-// On phone the graph is no longer freely expandable — instead the
-// person steps through one year at a time (arrows either side of a
-// centered year label). Every family that has at least one piece
-// that year is shown already "open" with its pieces listed; families
+// On phone the person steps through one year at a time (arrows either
+// side of a centered year label). Every family that has at least one
+// piece that year is shown "open" with its pieces listed; families
 // that are only a secondary link for that year's pieces show as a
 // plain closed dot (an anchor for the dotted connecting line) instead
 // of an empty open row. Families with nothing at all that year are
@@ -331,15 +388,14 @@ function primaryFamilyMapForYear(yv){
   return map;
 }
 
-// currentState() is read fresh at the top of every render(), so
-// desktop's own expanded/yearFilter state is never touched or
-// overwritten by phone mode, and switching between the two at a
-// resize boundary just picks a different view of the same data.
+// currentState() is read fresh at the top of every render(). Desktop
+// always shows the full catalog (every family, every piece, every
+// year, positioned along the chronology); phone still narrows to one
+// year at a time so the graph fits a small screen.
 function currentState(){
   if (isPhoneWidth()) {
     return {
       phone: true,
-      locked: true,
       familiesList: relevantFamiliesForYear(phoneYear),
       expandedMap: primaryFamilyMapForYear(phoneYear),
       yearFilterVal: phoneYear
@@ -347,12 +403,12 @@ function currentState(){
   }
   return {
     phone: false,
-    locked: false,
     familiesList: families,
-    expandedMap: expanded,
-    yearFilterVal: yearFilter
+    expandedMap: ALL_FAMILIES_OPEN,
+    yearFilterVal: null
   };
 }
+
 
 function computeLayout(state){
   var phone = state.phone;
@@ -548,42 +604,6 @@ function openPanel(piece){
   });
 }
 
-function toggleFamily(id){
-  if (expanded[id]) {
-    expanded[id] = false;
-    openOrder = openOrder.filter(function(fid){ return fid !== id; });
-  } else {
-    expanded[id] = true;
-    openOrder.push(id);
-  }
-  render();
-}
-
-// Tapping a year in the header shows ONLY that year's pieces — it
-// opens exactly the families needed (each piece's own primary family,
-// so no row ever opens empty) and closes everything else. Since every
-// visible piece then shares one year, they all land in the same
-// column — no horizontal crowding, which is the whole point on a
-// phone. Tapping the same year again restores whatever was open
-// before you started picking years.
-function pickYear(yv){
-  if (yearFilter === yv) {
-    expanded = expandedSnapshot || {};
-    expandedSnapshot = null;
-    yearFilter = null;
-    render();
-    return;
-  }
-  if (expandedSnapshot === null) expandedSnapshot = Object.assign({}, expanded);
-  var newExpanded = {};
-  pieces.forEach(function(p){
-    if (yearValue(p.year) === yv) newExpanded[p.links[0]] = true;
-  });
-  expanded = newExpanded;
-  yearFilter = yv;
-  render();
-}
-
 function render(){
   var state = currentState();
   var layout = computeLayout(state);
@@ -628,7 +648,6 @@ function render(){
     var f = row.family;
     var g = document.createElementNS(NS, 'g');
     g.setAttribute('class', 'family-row' + (row.isOpen ? ' expanded' : '') + (row.secondary ? ' secondary' : ''));
-    g.style.cursor = state.locked ? 'default' : 'pointer';
 
     var circle = document.createElementNS(NS, 'circle');
     circle.setAttribute('cx', SPINE_X); circle.setAttribute('cy', row.centerY); circle.setAttribute('r', FAMILY_R);
@@ -650,10 +669,6 @@ function render(){
       label.appendChild(labelTitle);
     }
     g.appendChild(label);
-
-    if (!state.locked) {
-      g.addEventListener('click', function(){ toggleFamily(f.id); });
-    }
 
     row.kids.forEach(function(p){
       var path = document.createElementNS(NS, 'path');
@@ -755,23 +770,12 @@ function render(){
     treeContent.appendChild(g);
   });
 
-  // Year axis: one label per column, sitting in the top margin. Doubles
-  // as a filter — click a year to narrow every open family down to
-  // just that year, click it again to clear.
+  // Year axis: one static label per column, sitting in the top margin
+  // — purely a chronology reminder now, not a filter. Nothing to
+  // click; the columns it labels are simply where pieces from that
+  // year already sit.
   var AXIS_Y = TOP_PAD - 22;
   layout.axisYears.forEach(function(ay){
-    var ag = document.createElementNS(NS, 'g');
-    ag.setAttribute('class', 'year-axis-item' + (yearFilter === ay.yv ? ' active' : ''));
-    ag.style.cursor = 'pointer';
-
-    var hit = document.createElementNS(NS, 'rect');
-    hit.setAttribute('x', ay.x - STAGGER_X / 2);
-    hit.setAttribute('y', AXIS_Y - 14);
-    hit.setAttribute('width', STAGGER_X);
-    hit.setAttribute('height', 28);
-    hit.setAttribute('fill', 'transparent');
-    ag.appendChild(hit);
-
     var at = document.createElementNS(NS, 'text');
     at.textContent = ay.label;
     at.setAttribute('class', 'year-axis-label');
@@ -781,10 +785,7 @@ function render(){
     at.setAttribute('dominant-baseline', 'central');
     at.setAttribute('font-family', FAMILY_LABEL_FONT);
     at.setAttribute('font-size', FAMILY_LABEL_FONT_SIZE);
-    ag.appendChild(at);
-
-    ag.addEventListener('click', function(){ pickYear(ay.yv); });
-    treeContent.appendChild(ag);
+    treeContent.appendChild(at);
   });
 
   // Give each secondary link its own lane when its Y-range overlaps
@@ -854,13 +855,11 @@ window.addEventListener('resize', function(){
   resizeTimer = setTimeout(render, 120);
 });
 
-// ---------- plain-list view: generated from the same data as the ----------
-// graph above, so a new piece only ever needs adding in one place.
-// Two orderings: by family (matches the graph's fixed order) and by
-// year (chronological; each title gets a small dot in its family's
-// colour, but the year headings themselves stay neutral).
-function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
-
+// ---------- catalogue view: generated from the same data as the ----------
+// chronologic view above, so a new piece only ever needs adding in one
+// place. Grouped by family, in the same fixed order as the graph, and
+// each family header uses the same visual language — a colored dot
+// plus the plain family name — instead of a boxed, bordered summary.
 function pieceMetaLine(p){
   if (p.note) return p.note;
   var parts = [];
@@ -884,8 +883,8 @@ function renderListByFamily(){
   families.forEach(function(f){
     var members = pieces.filter(function(p){ return p.links.indexOf(f.id) !== -1; });
     if (!members.length) return;
-    html += '<details>' +
-      '<summary style="border-left: 4px solid ' + f.color + '; padding-left: 10px;">' + cap(f.label) + '</summary>' +
+    html += '<details open>' +
+      '<summary><span class="family-dot" style="background-color:' + f.color + '"></span>' + f.label + '</summary>' +
       '<ul class="recent">' + members.map(function(p){ return pieceListItem(p, false); }).join('') + '</ul>' +
       '</details>';
   });
