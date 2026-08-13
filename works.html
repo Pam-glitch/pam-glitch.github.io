@@ -31,16 +31,16 @@
           <g id="tree-content"></g>
         </svg>
       </div>
-
-      <div class="piece-panel" id="piece-panel">
-        <button type="button" id="panel-close" class="panel-close" aria-label="Close">&times;</button>
-        <div id="panel-content" class="panel-text-col"></div>
-        <div id="panel-images" class="panel-images-col"></div>
-      </div>
     </div>
 
     <div class="map-list" id="map-list-view">
       <div id="list-content"></div>
+    </div>
+
+    <div class="piece-panel" id="piece-panel">
+      <button type="button" id="panel-close" class="panel-close" aria-label="Close">&times;</button>
+      <div id="panel-content" class="panel-text-col"></div>
+      <div id="panel-images" class="panel-images-col"></div>
     </div>
   </main>
 
@@ -91,7 +91,7 @@ var pieces = [
   {id:'p2', label:'Sax solo', fullLabel:'Solo piece for Saxophone', links:['winds'], year:'2026', forr:'saxophone (Gudrun Faleide Fristad)', where:'Premiere 7 Aug; touring La Plata, Ushuaia, Cajamarca from 24 Aug'},
   {id:'p3', label:'Erbe Selvatiche', links:['winds'], year:'2026', forr:'bass clarinet (Madara Elena Mezale)', where:'Norwegian Academy of Music, 24 March'},
   {id:'p4', label:'Corpo', links:['winds','electronics'], year:'2025', forr:'electroacoustic, ambisonics (w/ saxophonist Gregory Karanekha)', where:'Laidi Palace, Latvia'},
-  {id:'p5', label:'Album (2026)', links:['collabs'], year:'2026', forr:'accordion (Kalle Moberg), saxophone (Mario Gabola), vocals', where:'Label: Dissipatio (IT), September 2026'},
+  {id:'p5', label:'Album (2026)', links:['collabs'], year:'2026', forr:'accordion (Kalle Moberg), saxophone (Mario Gabola), vocals', where:'Label: <a href="https://dissipatio.bandcamp.com" target="_blank" rel="noopener">Dissipatio</a> (IT), September 2026'},
   {id:'p6', label:'Trombone solo', fullLabel:'Solo piece for Trombone', links:['brass'], year:'TBA', forr:'trombone (Guro Kitterød)', where:'TBA'},
   {id:'p7', label:'Richiamo', links:['brass','percussion','electronics'], year:'2025', forr:'trombone, tam-tam, transducer (Guro Kitterød)', where:'Sonisk Hage Festival, Galleri Sagene Kunstsmie'},
   {id:'p8', label:"We're Not Really Strangers", links:['strings','keys'], year:'2026', forr:'cello, two pianos', where:'Norwegian Academy of Music, 16 March'},
@@ -99,7 +99,7 @@ var pieces = [
   {id:'p10', label:'Tachysensia', links:['electronics'], year:'2025', forr:'speakers & phones', where:'Notam, Sonisk Hage Festival'},
   {id:'p11', label:'In Acqua', links:['voice'], year:'2024', forr:'choir', where:'JVLMA Jauktais Koris, Riga'},
   {id:'p12', label:'By the Grave of the Unknown Queer', links:['orchestra'], year:'2026', forr:'orchestra', where:'Trondheim Symphony Orchestra — workshops Jan & May'},
-  {id:'p13', label:'Il Mio, Il Tuo Corpo', links:['interdisciplinary'], year:'2025', forr:'interdisciplinary', where:'Aparte Festival, Vestfold Kunstsenter'},
+  {id:'p13', label:'Il Mio, Il Tuo Corpo', links:['interdisciplinary'], year:'2025', forr:'interdisciplinary', where:'<a href="https://apartefestival.no/Aurora-Maria-Ovrelid-Pambianchi" target="_blank" rel="noopener">Aparte Festival</a>, Vestfold Kunstsenter'},
   {id:'p14', label:'1st Draft: First Lady', links:['interdisciplinary'], year:'2025', forr:'Duo Amoeba', where:'Blitz, Oslo'},
   {id:'p15', label:'Habitat', links:['interdisciplinary'], year:'2025', forr:'interdisciplinary performance', where:'Norwegian Academy of Music'},
   {id:'p16', label:'Motore', links:['interdisciplinary'], year:'2024', forr:'collaborative graduation performance, Clothing & Costume', where:'Oslo National Academy of the Arts (KHiO)'},
@@ -199,14 +199,44 @@ var longestUnchangedWidth = Math.max.apply(null, UNCHANGED_FAMILY_IDS.map(functi
   var f = families.filter(function(x){ return x.id === id; })[0];
   return measureLabelWidth(f.label, FAMILY_LABEL_FONT_SIZE, FAMILY_LABEL_FONT);
 }));
-var UNIT = Math.ceil(longestUnchangedWidth) + 16; // + padding so text never touches the bend
+var UNIT_DESKTOP = Math.ceil(longestUnchangedWidth) + 16; // + padding so text never touches the bend
 
-var STAGGER_X = UNIT;      // per chronology rank: older pieces sit left, newer sit right
-var INITIAL_LINE_LEN = UNIT; // family dot -> first bend, sized to fit the family name
-var LANE_STEP = UNIT;      // gap between parallel dotted secondary-links
+// Phone gets its own, tighter unit: since every family shows its
+// SHORT label when open (on phone as well as desktop, per the
+// always-visible-name change below), the space that actually needs
+// reserving on phone is sized to the widest short label, not the
+// widest full one — real measurement, just a smaller basis.
+var longestShortWidth = Math.max.apply(null, families.map(function(f){
+  return measureLabelWidth(f.shortLabel, FAMILY_LABEL_FONT_SIZE, FAMILY_LABEL_FONT);
+}));
+var UNIT_PHONE = Math.ceil(longestShortWidth) + 10;
+
+// These three get reassigned at the top of every render() (desktop
+// vs phone unit) rather than fixed once at load.
+var STAGGER_X = UNIT_DESKTOP;      // per chronology rank: older pieces sit left, newer sit right
+var INITIAL_LINE_LEN = UNIT_DESKTOP; // family dot -> first bend, sized to fit the family name
+var LANE_STEP = UNIT_DESKTOP;      // gap between parallel dotted secondary-links
 
 var PHONE_BREAKPOINT = 900; // matches the CSS .grow-right breakpoint
 function isPhoneWidth(){ return window.innerWidth < PHONE_BREAKPOINT; }
+
+var LABEL_LINE_HEIGHT = 20; // vertical step between wrapped label lines, phone only
+function wrapLabelLines(text, maxWidth, fontPx, fontFamily){
+  var words = text.split(' ');
+  var lines = [];
+  var current = '';
+  words.forEach(function(word){
+    var candidate = current ? current + ' ' + word : word;
+    if (!current || measureLabelWidth(candidate, fontPx, fontFamily) <= maxWidth) {
+      current = candidate;
+    } else {
+      lines.push(current);
+      current = word;
+    }
+  });
+  if (current) lines.push(current);
+  return lines.length ? lines : [text];
+}
 
 var expanded = {};
 var openOrder = [];
@@ -244,6 +274,22 @@ function piecesFor(familyId){
 }
 
 function computeLayout(){
+  var phone = isPhoneWidth();
+  var unit = phone ? UNIT_PHONE : UNIT_DESKTOP;
+  STAGGER_X = unit;
+  INITIAL_LINE_LEN = unit;
+  LANE_STEP = unit;
+
+  // On phone, once a year is picked, every visible piece shares one
+  // fixed column no matter which year — so switching years doesn't
+  // shift anything horizontally, and the graph never needs more room
+  // than that single column already fits in. The axis buttons above
+  // still sit at their real chronological x (see axisYears below) so
+  // the header still reads as a timeline; only the pieces themselves
+  // stop moving. Desktop keeps true per-year columns.
+  var lockToOneColumn = yearFilter !== null && phone;
+  var containerW = contentWidth();
+
   var y = TOP_PAD;
   var rows = [];
   var secondaryFamilyIds = {}; // closed families a visible piece also links to
@@ -254,8 +300,26 @@ function computeLayout(){
     if (yearFilter !== null) kids = kids.filter(function(p){ return yearValue(p.year) === yearFilter; });
     kids.forEach(function(p){
       p.links.forEach(function(fid){ if (fid !== f.id && !expanded[fid]) secondaryFamilyIds[fid] = true; });
+
+      // x doesn't depend on row position, so it's safe to assign here,
+      // before row heights (which now depend on wrapped label height,
+      // which depends on x) are worked out below.
+      p.treeX = lockToOneColumn ? PIECE_X : PIECE_X + GLOBAL_RANK_BY_YEAR[yearValue(p.year)] * STAGGER_X;
+      p.homeFamily = f.id;
+
+      // Phone: wrap the label into as many lines as it needs to fit
+      // the real remaining width, instead of letting it push the
+      // graph wider than the screen. Desktop is unchanged — single line.
+      if (phone) {
+        var availW = Math.max(60, containerW - (p.treeX + PIECE_R + 10) - 16);
+        p.labelLines = wrapLabelLines(p.fullLabel || p.label, availW, PIECE_FONT_SIZE, '"Helvetica Neue", Helvetica, Arial, sans-serif');
+      } else {
+        p.labelLines = [p.fullLabel || p.label];
+      }
+      p.slotH = PIECE_ROW_H + (p.labelLines.length - 1) * LABEL_LINE_HEIGHT;
     });
-    var rowH = isOpen ? Math.max(CLOSED_ROW_H, ROW_PAD * 2 + kids.length * PIECE_ROW_H) : CLOSED_ROW_H;
+    var kidsH = kids.reduce(function(sum, p){ return sum + p.slotH; }, 0);
+    var rowH = isOpen ? Math.max(CLOSED_ROW_H, ROW_PAD * 2 + kidsH) : CLOSED_ROW_H;
     rows.push({ family: f, top: y, rowH: rowH, centerY: y + rowH / 2, kids: kids, isOpen: isOpen });
     y += rowH;
   });
@@ -264,29 +328,26 @@ function computeLayout(){
     return { yv: yv, label: (yv === Infinity ? 'TBA' : String(yv)), x: PIECE_X + GLOBAL_RANK_BY_YEAR[yv] * STAGGER_X };
   });
 
-  // On phone, once a year is picked, every visible piece shares one
-  // fixed column no matter which year — so switching years doesn't
-  // shift anything horizontally, and the graph never needs to grow
-  // past whatever the first column already fits in. The axis buttons
-  // above still sit at their real chronological x (see axisYears
-  // above) so the header still reads as a timeline; only the pieces
-  // themselves stop moving. Desktop keeps true per-year columns.
-  var lockToOneColumn = yearFilter !== null && isPhoneWidth();
-
   rows.forEach(function(row){
     row.secondary = !row.isOpen && !!secondaryFamilyIds[row.family.id];
+    if (row.kids.length === 1) {
+      row.kids[0].treeY = row.centerY;
+      return;
+    }
+    // Slots are no longer uniform (a wrapped label needs a taller
+    // slot than a single-line one) — stack cumulatively by each
+    // piece's own slotH, spreading any leftover row space evenly
+    // between them. When every slotH is equal (always true on
+    // desktop) this produces the exact same positions as simple
+    // even division did before.
     var innerTop = row.top + ROW_PAD;
     var innerH = row.rowH - ROW_PAD * 2;
-    row.kids.forEach(function(p, i){
-      var slotCenter = row.kids.length === 1
-        ? row.centerY
-        : innerTop + (innerH / row.kids.length) * (i + 0.5);
-      p.treeY = slotCenter;
-      // oldest year sits leftmost, newest furthest right — pieces
-      // sharing the same year, even across different families, stay
-      // aligned on the same vertical line; different years never share one.
-      p.treeX = lockToOneColumn ? PIECE_X : PIECE_X + GLOBAL_RANK_BY_YEAR[yearValue(p.year)] * STAGGER_X;
-      p.homeFamily = row.family.id;
+    var totalKidsH = row.kids.reduce(function(s, p){ return s + p.slotH; }, 0);
+    var gap = (innerH - totalKidsH) / row.kids.length;
+    var cursor = innerTop;
+    row.kids.forEach(function(p){
+      p.treeY = cursor + gap / 2 + p.slotH / 2;
+      cursor += gap + p.slotH;
     });
   });
 
@@ -442,23 +503,30 @@ function render(){
   var layout = computeLayout();
   treeContent.innerHTML = '';
 
-  // The container's width is a starting point, not a hard ceiling.
-  // When enough year columns are open to push pieces past the visible
-  // edge (easy to hit on a phone), the graph needs to actually grow
-  // wider than the container and become horizontally scrollable —
-  // otherwise those pieces are just clipped and silently invisible,
-  // which is exactly what was happening before this fix.
-  var allKids = [];
-  layout.rows.forEach(function(row){ row.kids.forEach(function(p){ allKids.push(p); }); });
-  var neededWidth = allKids.reduce(function(max, p){
-    var labelW = measureLabelWidth(p.fullLabel || p.label, PIECE_FONT_SIZE, '"Helvetica Neue", Helvetica, Arial, sans-serif');
-    var rightEdge = p.treeX + PIECE_R + 10 + labelW + 24; // label start offset + measured text + right margin
-    return Math.max(max, rightEdge);
-  }, 0);
-
   var containerWidth = contentWidth();
-  var vbw = Math.max(containerWidth, neededWidth);
-  var needsScroll = vbw > containerWidth;
+  var vbw, needsScroll;
+
+  if (isPhoneWidth()) {
+    // Phone: labels now wrap onto extra lines instead of pushing the
+    // graph wider (see computeLayout's slotH), and columns use the
+    // tighter UNIT_PHONE spacing — so the graph should always fit
+    // within the container without needing to scroll at all.
+    vbw = containerWidth;
+    needsScroll = false;
+  } else {
+    // Desktop: unchanged — grow past the container and scroll if
+    // enough year columns are open to push pieces past the edge.
+    var allKids = [];
+    layout.rows.forEach(function(row){ row.kids.forEach(function(p){ allKids.push(p); }); });
+    var neededWidth = allKids.reduce(function(max, p){
+      var labelW = measureLabelWidth(p.fullLabel || p.label, PIECE_FONT_SIZE, '"Helvetica Neue", Helvetica, Arial, sans-serif');
+      var rightEdge = p.treeX + PIECE_R + 10 + labelW + 24; // label start offset + measured text + right margin
+      return Math.max(max, rightEdge);
+    }, 0);
+    vbw = Math.max(containerWidth, neededWidth);
+    needsScroll = vbw > containerWidth;
+  }
+
   svg.style.width = needsScroll ? vbw + 'px' : '100%';
   treeWrapEl.style.overflowX = needsScroll ? 'auto' : 'visible';
 
@@ -522,7 +590,6 @@ function render(){
       pg.appendChild(pc);
 
       var pl = document.createElementNS(NS, 'text');
-      pl.textContent = p.fullLabel || p.label;
       pl.setAttribute('class', 'p-label');
       pl.setAttribute('x', p.treeX + PIECE_R + 10);
       pl.setAttribute('y', p.treeY);
@@ -530,6 +597,14 @@ function render(){
       pl.setAttribute('font-family', 'Helvetica Neue, Helvetica, Arial, sans-serif');
       pl.setAttribute('font-size', PIECE_FONT_SIZE);
       pl.setAttribute('fill', '#2b2b2b');
+      var labelLines = p.labelLines || [p.fullLabel || p.label];
+      labelLines.forEach(function(line, i){
+        var tspan = document.createElementNS(NS, 'tspan');
+        tspan.textContent = line;
+        tspan.setAttribute('x', p.treeX + PIECE_R + 10);
+        if (i > 0) tspan.setAttribute('dy', LABEL_LINE_HEIGHT);
+        pl.appendChild(tspan);
+      });
       pg.appendChild(pl);
       var labelEndX = pl.getBBox().x + pl.getBBox().width;
 
@@ -537,7 +612,7 @@ function render(){
       pd.textContent = p.year;
       pd.setAttribute('class', 'p-date');
       pd.setAttribute('x', p.treeX + PIECE_R + 10);
-      pd.setAttribute('y', p.treeY + 16);
+      pd.setAttribute('y', p.treeY + 16 + (labelLines.length - 1) * LABEL_LINE_HEIGHT);
       pd.setAttribute('dominant-baseline', 'central');
       pd.setAttribute('font-family', 'Courier New, Courier, monospace');
       pd.setAttribute('font-size', DATE_FONT_SIZE);
@@ -685,7 +760,7 @@ function pieceListItem(p, withDot){
     ? '<span class="piece-dot" style="background-color:' + nodeById[p.links[0]].color + '"></span>'
     : '';
   var meta = pieceMetaLine(p);
-  return '<li>' + dot + (p.fullLabel || p.label) +
+  return '<li class="li-piece" data-piece-id="' + p.id + '" tabindex="0" role="button">' + dot + (p.fullLabel || p.label) +
     (meta ? '<br><span class="meta">' + meta + '</span>' : '') +
     '</li>';
 }
@@ -702,6 +777,24 @@ function renderListByFamily(){
   });
   document.getElementById('list-content').innerHTML = html;
 }
+
+// Delegated once on the container (not re-attached per render, since
+// #list-content itself is never replaced — only its innerHTML is)
+var listContentEl = document.getElementById('list-content');
+listContentEl.addEventListener('click', function(e){
+  var li = e.target.closest('.li-piece');
+  if (!li) return;
+  var piece = nodeById[li.getAttribute('data-piece-id')];
+  if (piece) openPanel(piece);
+});
+listContentEl.addEventListener('keydown', function(e){
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  var li = e.target.closest('.li-piece');
+  if (!li) return;
+  e.preventDefault();
+  var piece = nodeById[li.getAttribute('data-piece-id')];
+  if (piece) openPanel(piece);
+});
 
 renderListByFamily();
 </script>
