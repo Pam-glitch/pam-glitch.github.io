@@ -424,6 +424,12 @@ function computeLayout(state){
   STAGGER_X = unit;
   INITIAL_LINE_LEN = unit;
   LANE_STEP = unit;
+  // The connector's vertical bend sits at SPINE_X + FAMILY_R + INITIAL_LINE_LEN
+  // (see connectorPath) — sized to clear the longest family name.
+  // PIECE_X has to sit far enough right of that bend, plus the piece
+  // circle's own radius and corner rounding, or the bend lands inside
+  // the piece's own label text for any family with a long name.
+  PIECE_X = SPINE_X + FAMILY_R + INITIAL_LINE_LEN + PIECE_R + CORNER_R + 8;
 
   // On phone, every visible piece shares one fixed column no matter
   // which year is picked — so switching years doesn't shift anything
