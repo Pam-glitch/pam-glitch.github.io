@@ -31,10 +31,11 @@
         <span class="year-switcher-label" id="year-switcher-label">2026</span>
         <button type="button" id="year-next" class="year-switcher-btn" aria-label="Next year">&rsaquo;</button>
       </div>
+      <div class="hscroll-nav" id="hscroll-nav" aria-hidden="true">
+        <button type="button" id="hscroll-prev" class="hscroll-nav-btn" aria-label="Scroll to earlier works">&lsaquo;</button>
+        <button type="button" id="hscroll-next" class="hscroll-nav-btn" aria-label="Scroll to later works">&rsaquo;</button>
+      </div>
       <div class="tree-wrap" id="tree-wrap">
-        <div class="scroll-hint" id="scroll-hint" aria-hidden="true">
-          <span class="scroll-hint-text">scroll</span><span class="scroll-hint-arrow">&rsaquo;&rsaquo;</span>
-        </div>
         <div class="hscroll-track" id="hscroll-track" aria-hidden="true">
           <div class="hscroll-thumb" id="hscroll-thumb"></div>
         </div>
@@ -624,6 +625,37 @@ hscrollTrack.addEventListener('click', function(e){
   var targetLeft = Math.max(0, Math.min(maxThumbLeft, clickX - thumbW / 2));
   treeWrapEl.scrollLeft = maxThumbLeft > 0 ? (targetLeft / maxThumbLeft) * maxScroll : 0;
 });
+
+// ---------- prev/next scroll buttons (desktop) ----------
+// A click pages the view by one year's column width (STAGGER_X) with
+// a smooth animated scroll — so clicking "next" is exactly "the
+// oldest year currently on screen slides off, the next one slides
+// in", same idea as the phone year-switcher but for the continuous
+// chronologic view instead of swapping to a single locked year.
+var hscrollNav = document.getElementById('hscroll-nav');
+var hscrollPrevBtn = document.getElementById('hscroll-prev');
+var hscrollNextBtn = document.getElementById('hscroll-next');
+
+function updateHScrollNav(needsScroll){
+  hscrollNav.classList.toggle('visible', needsScroll);
+  if (!needsScroll) return;
+  var maxScroll = treeWrapEl.scrollWidth - treeWrapEl.clientWidth;
+  hscrollPrevBtn.disabled = treeWrapEl.scrollLeft <= 0;
+  hscrollNextBtn.disabled = treeWrapEl.scrollLeft >= maxScroll - 1;
+}
+treeWrapEl.addEventListener('scroll', function(){
+  updateHScrollNav(treeWrapEl.classList.contains('has-scroll'));
+});
+
+function scrollByOneYear(dir){
+  var step = STAGGER_X || 160;
+  var maxScroll = treeWrapEl.scrollWidth - treeWrapEl.clientWidth;
+  var target = Math.max(0, Math.min(maxScroll, treeWrapEl.scrollLeft + dir * step));
+  treeWrapEl.scrollTo({ left: target, behavior: 'smooth' });
+}
+hscrollPrevBtn.addEventListener('click', function(){ scrollByOneYear(-1); });
+hscrollNextBtn.addEventListener('click', function(){ scrollByOneYear(1); });
+
 var NS = 'http://www.w3.org/2000/svg';
 
 // The viewBox width is set to the wrapper's actual rendered pixel
@@ -721,6 +753,7 @@ function render(){
   treeWrapEl.classList.toggle('has-scroll', needsScroll);
   updateScrollEdgeState();
   updateHScrollThumb();
+  updateHScrollNav(needsScroll);
 
   svg.setAttribute('viewBox', '0 0 ' + vbw + ' ' + layout.totalHeight);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');

@@ -366,43 +366,46 @@ footer p {
   cursor: grabbing;
 }
 
-/* Scroll hint: the little animated "scroll ››" badge — nudged down
-   slightly so it sits just under the dotted bar instead of on top
-   of it, still up in the same top-right corner near the years. */
-.scroll-hint {
-  position: absolute;
-  top: 9px;
-  right: 2px;
+/* Prev/next scroll buttons: a desktop-only pair of round arrow
+   buttons above the graph, same shape as the phone year-switcher's
+   buttons, so the "click to page through the timeline" affordance
+   reads the same across both. Right-aligned rather than centered
+   since there's no year label here — the graph itself is the label.
+   Only shown once there's actually somewhere to scroll to. */
+.hscroll-nav {
   display: none;
   align-items: center;
-  gap: 4px;
-  font-family: "Courier New", Courier, monospace;
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  color: var(--ink);
-  opacity: 0.6;
-  pointer-events: none;
-  z-index: 2;
-  transition: opacity 0.25s ease;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 0 0 10px;
 }
 
-#tree-wrap.has-scroll .scroll-hint {
+.hscroll-nav.visible {
   display: flex;
 }
 
-#tree-wrap.has-scroll.at-end .scroll-hint {
-  opacity: 0;
+@media (max-width: 899px) {
+  .hscroll-nav {
+    display: none !important;
+  }
 }
 
-.scroll-hint-arrow {
-  display: inline-block;
-  animation: scroll-hint-nudge 1.3s ease-in-out infinite;
+.hscroll-nav-btn {
+  background: none;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
 }
 
-@keyframes scroll-hint-nudge {
-  0%, 100% { transform: translateX(0); opacity: 0.6; }
-  50% { transform: translateX(5px); opacity: 1; }
+.hscroll-nav-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
 }
 
 /* No box, no outline — the graph sits right on the page background.
