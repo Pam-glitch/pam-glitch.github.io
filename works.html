@@ -311,6 +311,13 @@ var openPieceId = null;
 // Phone doesn't use this; it has its own always-open-per-year logic.
 var expanded = {};
 
+// Desktop only: clicking a year in the axis is an alternate way in —
+// it shows every piece from that year (across all families) instead
+// of one family's full history. Picking a year resets any manual
+// family toggles so the two modes never mix confusingly; picking a
+// family the normal way (see toggleFamily) clears the year back out.
+var selectedYear = null;
+
 // Phone's starting year: today's real year if the catalog has
 // anything in it, otherwise the closest earlier year, otherwise
 // whatever the earliest year in the data is.
@@ -386,6 +393,14 @@ function currentState(){
       familiesList: relevantFamiliesForYear(phoneYear),
       expandedMap: primaryFamilyMapForYear(phoneYear),
       yearFilterVal: phoneYear
+    };
+  }
+  if (selectedYear !== null) {
+    return {
+      phone: false,
+      familiesList: families,
+      expandedMap: primaryFamilyMapForYear(selectedYear),
+      yearFilterVal: selectedYear
     };
   }
   return {
@@ -522,13 +537,26 @@ function secondaryLinkPath(familyY, pieceY, pieceX, laneX){
 }
 
 function toggleFamily(id){
+  selectedYear = null;
   expanded[id] = !expanded[id];
+  render();
+}
+
+function toggleYear(yv){
+  selectedYear = (selectedYear === yv) ? null : yv;
+  expanded = {};
   render();
 }
 
 var svg = document.getElementById('tree');
 var treeContent = document.getElementById('tree-content');
 var treeWrapEl = document.getElementById('tree-wrap');
+
+function updateScrollEdgeState(){
+  var atEnd = treeWrapEl.scrollWidth - treeWrapEl.clientWidth - treeWrapEl.scrollLeft < 2;
+  treeWrapEl.classList.toggle('at-end', atEnd);
+}
+treeWrapEl.addEventListener('scroll', updateScrollEdgeState);
 var NS = 'http://www.w3.org/2000/svg';
 
 // The viewBox width is set to the wrapper's actual rendered pixel
@@ -623,6 +651,8 @@ function render(){
 
   svg.style.width = needsScroll ? vbw + 'px' : '100%';
   treeWrapEl.style.overflowX = needsScroll ? 'auto' : 'visible';
+  treeWrapEl.classList.toggle('has-scroll', needsScroll);
+  updateScrollEdgeState();
 
   svg.setAttribute('viewBox', '0 0 ' + vbw + ' ' + layout.totalHeight);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
@@ -758,22 +788,44 @@ function render(){
     treeContent.appendChild(g);
   });
 
-  // Year axis: one static label per column, sitting in the top margin
-  // — purely a chronology reminder now, not a filter. Nothing to
-  // click; the columns it labels are simply where pieces from that
-  // year already sit.
+  // Year axis: one label per column, sitting in the top margin.
+  // Desktop-only and clickable — clicking a year is a second way in,
+  // alongside clicking a family: it shows every piece from that year
+  // across all families. The selected year gets the same boxed-outline
+  // treatment as the active page in the top nav, so it's obvious which
+  // one (if any) is currently picked.
   var AXIS_Y = TOP_PAD - 22;
   layout.axisYears.forEach(function(ay){
+    var isSelected = !state.phone && ay.yv === selectedYear;
     var at = document.createElementNS(NS, 'text');
     at.textContent = ay.label;
-    at.setAttribute('class', 'year-axis-label');
+    at.setAttribute('class', 'year-axis-label' + (isSelected ? ' selected' : ''));
     at.setAttribute('x', ay.x);
     at.setAttribute('y', AXIS_Y);
     at.setAttribute('text-anchor', 'middle');
     at.setAttribute('dominant-baseline', 'central');
     at.setAttribute('font-family', FAMILY_LABEL_FONT);
     at.setAttribute('font-size', FAMILY_LABEL_FONT_SIZE);
+    if (!state.phone) {
+      at.style.cursor = 'pointer';
+      at.addEventListener('click', function(){ toggleYear(ay.yv); });
+    }
     treeContent.appendChild(at);
+
+    if (isSelected) {
+      var bbox = at.getBBox();
+      var padX = 7, padY = 4;
+      var box = document.createElementNS(NS, 'rect');
+      box.setAttribute('class', 'year-axis-box');
+      box.setAttribute('x', bbox.x - padX);
+      box.setAttribute('y', bbox.y - padY);
+      box.setAttribute('width', bbox.width + padX * 2);
+      box.setAttribute('height', bbox.height + padY * 2);
+      box.setAttribute('fill', 'none');
+      box.setAttribute('stroke', '#000000');
+      box.setAttribute('stroke-width', '1');
+      treeContent.insertBefore(box, at);
+    }
   });
 
   // Give each secondary link its own lane when its Y-range overlaps
@@ -862,7 +914,7 @@ function renderListByFamily(){
   families.forEach(function(f){
     var members = pieces.filter(function(p){ return p.links.indexOf(f.id) !== -1; });
     if (!members.length) return;
-    html += '<details open>' +
+    html += '<details>' +
       '<summary>' +
         '<span class="family-dot" style="background-color:' + f.color + '"></span>' +
         '<span class="family-arrow" aria-hidden="true">&#9656;</span>' +

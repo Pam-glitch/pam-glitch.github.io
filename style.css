@@ -290,6 +290,50 @@ footer p {
   width: 100%;
   position: relative;
   -webkit-overflow-scrolling: touch;
+  /* Always-visible scrollbar instead of the OS default: macOS hides
+     scrollbars until you touch the trackpad, which makes horizontal
+     scroll easy to miss entirely. This keeps a thin dark bar on
+     screen at all times, on any platform, so its presence alone is
+     the hint. (Windows/Linux browsers already show a scrollbar by
+     default — this just makes it match and look intentional there
+     too, rather than the browser's default grey.) */
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink) transparent;
+}
+
+#tree-wrap::-webkit-scrollbar {
+  height: 8px;
+}
+
+#tree-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#tree-wrap::-webkit-scrollbar-thumb {
+  background: var(--ink);
+  border-radius: 4px;
+}
+
+/* Extra belt-and-braces cue: a fade at the right edge whenever the
+   graph is wider than its container, so "there's more this way" is
+   visible even before anyone notices the scrollbar. It fades out once
+   you've scrolled to the actual end. Toggled via JS (.has-scroll /
+   .at-end), since it only makes sense when scroll is actually active. */
+#tree-wrap.has-scroll::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 8px;
+  width: 36px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--bg));
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+#tree-wrap.has-scroll.at-end::after {
+  opacity: 0;
 }
 
 /* No box, no outline — the graph sits right on the page background.
@@ -341,10 +385,30 @@ footer p {
   transition: none;
 }
 
-/* Year axis: a quiet, static chronology label above the graph. */
+/* Year axis: a quiet chronology label above the graph. Clickable on
+   desktop (phone never gets the .selected/hover treatment since it
+   has its own year-switcher instead). Hover underline mirrors the
+   family-name hover so both "things you can click" read the same
+   way; the box drawn around a selected year in the JS matches the
+   bordered look of the active page in the top nav. */
 .year-axis-label {
   fill: var(--gray);
   opacity: 0.55;
+}
+
+.year-axis-label:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--ink);
+}
+
+.year-axis-label.selected {
+  fill: var(--ink);
+  opacity: 1;
+  text-decoration: none;
+}
+
+.year-axis-box {
+  pointer-events: none;
 }
 
 /* Neon fuchsia arrows, shown under the graph when a piece is open */
