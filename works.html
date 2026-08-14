@@ -35,6 +35,9 @@
         <div class="scroll-hint" id="scroll-hint" aria-hidden="true">
           <span class="scroll-hint-text">scroll</span><span class="scroll-hint-arrow">&rsaquo;&rsaquo;</span>
         </div>
+        <div class="hscroll-track" id="hscroll-track" aria-hidden="true">
+          <div class="hscroll-thumb" id="hscroll-thumb"></div>
+        </div>
         <svg id="tree" width="100%" height="100%" role="img" aria-label="Chronologic tree of works, click a piece for details">
           <g id="tree-content"></g>
         </svg>
@@ -560,6 +563,61 @@ function updateScrollEdgeState(){
   treeWrapEl.classList.toggle('at-end', atEnd);
 }
 treeWrapEl.addEventListener('scroll', updateScrollEdgeState);
+
+// ---------- custom dotted scrollbar (replaces the native one) ----------
+var hscrollTrack = document.getElementById('hscroll-track');
+var hscrollThumb = document.getElementById('hscroll-thumb');
+
+function updateHScrollThumb(){
+  var trackW = hscrollTrack.clientWidth;
+  var contentW = treeWrapEl.scrollWidth;
+  var visibleW = treeWrapEl.clientWidth;
+  if (contentW <= visibleW || !trackW) { hscrollThumb.style.width = '0px'; return; }
+  var thumbW = Math.max(24, trackW * (visibleW / contentW));
+  var maxThumbLeft = trackW - thumbW;
+  var maxScroll = contentW - visibleW;
+  var left = maxScroll > 0 ? (treeWrapEl.scrollLeft / maxScroll) * maxThumbLeft : 0;
+  hscrollThumb.style.width = thumbW + 'px';
+  hscrollThumb.style.left = left + 'px';
+}
+treeWrapEl.addEventListener('scroll', updateHScrollThumb);
+window.addEventListener('resize', function(){ setTimeout(updateHScrollThumb, 130); });
+
+var hDragging = false, hDragStartX = 0, hDragStartScroll = 0;
+hscrollThumb.addEventListener('pointerdown', function(e){
+  hDragging = true;
+  hDragStartX = e.clientX;
+  hDragStartScroll = treeWrapEl.scrollLeft;
+  hscrollThumb.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+hscrollThumb.addEventListener('pointermove', function(e){
+  if (!hDragging) return;
+  var trackW = hscrollTrack.clientWidth;
+  var contentW = treeWrapEl.scrollWidth;
+  var visibleW = treeWrapEl.clientWidth;
+  var maxScroll = contentW - visibleW;
+  var maxThumbLeft = trackW - hscrollThumb.offsetWidth;
+  var dx = e.clientX - hDragStartX;
+  var scrollDelta = maxThumbLeft > 0 ? (dx / maxThumbLeft) * maxScroll : 0;
+  treeWrapEl.scrollLeft = hDragStartScroll + scrollDelta;
+});
+hscrollThumb.addEventListener('pointerup', function(){ hDragging = false; });
+
+// Clicking the track itself (not the thumb) jumps to that position.
+hscrollTrack.addEventListener('click', function(e){
+  if (e.target === hscrollThumb) return;
+  var rect = hscrollTrack.getBoundingClientRect();
+  var clickX = e.clientX - rect.left;
+  var trackW = hscrollTrack.clientWidth;
+  var contentW = treeWrapEl.scrollWidth;
+  var visibleW = treeWrapEl.clientWidth;
+  var maxScroll = contentW - visibleW;
+  var thumbW = hscrollThumb.offsetWidth;
+  var maxThumbLeft = trackW - thumbW;
+  var targetLeft = Math.max(0, Math.min(maxThumbLeft, clickX - thumbW / 2));
+  treeWrapEl.scrollLeft = maxThumbLeft > 0 ? (targetLeft / maxThumbLeft) * maxScroll : 0;
+});
 var NS = 'http://www.w3.org/2000/svg';
 
 // The viewBox width is set to the wrapper's actual rendered pixel
@@ -656,6 +714,7 @@ function render(){
   treeWrapEl.style.overflowX = needsScroll ? 'auto' : 'visible';
   treeWrapEl.classList.toggle('has-scroll', needsScroll);
   updateScrollEdgeState();
+  updateHScrollThumb();
 
   svg.setAttribute('viewBox', '0 0 ' + vbw + ' ' + layout.totalHeight);
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');

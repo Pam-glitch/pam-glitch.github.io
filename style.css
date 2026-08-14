@@ -290,28 +290,16 @@ footer p {
   width: 100%;
   position: relative;
   -webkit-overflow-scrolling: touch;
-  /* Always-visible scrollbar instead of the OS default: macOS hides
-     scrollbars until you touch the trackpad, which makes horizontal
-     scroll easy to miss entirely. This keeps a thin dark bar on
-     screen at all times, on any platform, so its presence alone is
-     the hint. (Windows/Linux browsers already show a scrollbar by
-     default — this just makes it match and look intentional there
-     too, rather than the browser's default grey.) */
-  scrollbar-width: thin;
-  scrollbar-color: var(--ink) transparent;
+  /* The native scrollbar sits at the very bottom of the graph, way
+     below where anyone's looking — easy to miss entirely. It's
+     hidden here in favor of a custom bar drawn up at the top, right
+     over the year row (see #hscroll-track below), which is also
+     draggable/clickable exactly like a normal scrollbar. */
+  scrollbar-width: none;
 }
 
 #tree-wrap::-webkit-scrollbar {
-  height: 8px;
-}
-
-#tree-wrap::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-#tree-wrap::-webkit-scrollbar-thumb {
-  background: var(--ink);
-  border-radius: 4px;
+  display: none;
 }
 
 /* Extra belt-and-braces cue: a fade at the right edge whenever the
@@ -336,14 +324,54 @@ footer p {
   opacity: 0;
 }
 
-/* Scroll hint: sits up with the year row (top-right), so it reads as
-   part of the same "here's the timeline, and it continues →" idea.
-   Only shown while there's actually somewhere to scroll to, and it
-   fades out once you've scrolled all the way there. The arrow nudges
-   sideways on a loop — a static label alone was getting missed. */
-.scroll-hint {
+/* Custom horizontal scrollbar: a line of blue dots — same blue as
+   the email link on the contact page (--link / --blue) — sitting
+   right above the graph, over the year row, instead of a plain bar
+   underneath everything. The track is the same dots at low opacity
+   for their full possible travel; the thumb is the solid, full-
+   opacity segment showing how much is visible and where you are.
+   Both track and thumb are draggable/clickable like a real scrollbar. */
+#hscroll-track {
   position: absolute;
   top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  display: none;
+  cursor: pointer;
+  background-image: radial-gradient(circle, var(--link) 1.6px, transparent 2px);
+  background-size: 9px 6px;
+  background-repeat: repeat-x;
+  background-position: center;
+  opacity: 0.3;
+}
+
+#tree-wrap.has-scroll #hscroll-track {
+  display: block;
+}
+
+#hscroll-thumb {
+  position: absolute;
+  top: 0;
+  height: 6px;
+  min-width: 24px;
+  cursor: grab;
+  background-image: radial-gradient(circle, var(--link) 1.6px, transparent 2px);
+  background-size: 9px 6px;
+  background-repeat: repeat-x;
+  background-position: center;
+}
+
+#hscroll-thumb:active {
+  cursor: grabbing;
+}
+
+/* Scroll hint: the little animated "scroll ››" badge — nudged down
+   slightly so it sits just under the dotted bar instead of on top
+   of it, still up in the same top-right corner near the years. */
+.scroll-hint {
+  position: absolute;
+  top: 9px;
   right: 2px;
   display: none;
   align-items: center;
